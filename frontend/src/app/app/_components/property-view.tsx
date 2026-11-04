@@ -8,14 +8,16 @@ import {
   DomainError,
   isFinalized,
   replaceCostsForProperty,
+  replaceCostsForYear,
   replaceTenanciesForUnits,
   replaceUnitsForProperty,
+  upsertProperty,
   upsertTenancy,
   upsertCost,
   upsertUnit,
   useAppState,
 } from "@/lib/domain/store";
-import { activeDays } from "@/lib/domain/settlement";
+import { activeDays, daysInYear } from "@/lib/domain/settlement";
 import { COST_CATEGORIES, KEY_LABELS, type AppState, type KeyType } from "@/lib/domain/types";
 import {
   buttonPrimary,
@@ -116,6 +118,10 @@ export function PropertyView({ propertyId, year, otherYears }: { propertyId: str
             to: record.end_date ? String(record.end_date) : null,
             persons,
             prepaymentCents: Math.round(prepayment * 100),
+            prepaymentMode: record.prepayment_mode === "taggenau" ? ("taggenau" as const) : ("kalendermonate" as const),
+            tenantStreet: typeof record.tenant_street === "string" ? record.tenant_street : "",
+            tenantZip: typeof record.tenant_zip === "string" ? record.tenant_zip : "",
+            tenantCity: typeof record.tenant_city === "string" ? record.tenant_city : "",
           }];
         });
 
@@ -155,7 +161,7 @@ export function PropertyView({ propertyId, year, otherYears }: { propertyId: str
             typeof record.category !== "string" ||
             !Number.isFinite(amountEur) ||
             !Number.isInteger(yearValue) ||
-            (key !== "flaeche" && key !== "personen" && key !== "einheiten")
+            (key !== "flaeche" && key !== "personen" && key !== "einheiten" && key !== "direkt")
           ) {
             return [];
           }
@@ -166,6 +172,7 @@ export function PropertyView({ propertyId, year, otherYears }: { propertyId: str
             category: record.category,
             amountCents: Math.round(amountEur * 100),
             key: key as KeyType,
+            directTenancyId: typeof record.direct_tenancy_id === "string" ? record.direct_tenancy_id : null,
             receipts: typeof record.receipt_path === "string" && record.receipt_path
               ? [record.receipt_path.split("/").at(-1) ?? record.receipt_path]
               : [],
@@ -248,10 +255,149 @@ export function PropertyView({ propertyId, year, otherYears }: { propertyId: str
         ))}
       </nav>
 
+      <PropertyContactPanel property={property} locked={finalizedAny} />
+
+      <PreviousYearCopyPanel propertyId={propertyId} year={year} costs={costs} costsLoaded={costsLoaded} />
+
       <UnitsPanel propertyId={propertyId} units={units} state={state} />
       <TenanciesPanel units={units} tenancies={tenanciesInYear} year={year} locked={finalizedAny} />
-      <CostsPanel propertyId={propertyId} year={year} costs={costs} locked={locked} />
+      <CostsPanel propertyId={propertyId} year={year} costs={costs} tenancies={tenanciesInYear} locked={locked} />
     </div>
+  );
+}
+
+function PropertyContactPanel({ property, locked }: { property: AppState["properties"][number]; locked: boolean }) {
+  const { error, runAsync } = useFormError();
+  const [saved, setSaved] = useState(false);
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const ok = await runAsync(async () => {
+      const response = await fetch(`/api/properties/${property.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: property.name,
+          street: property.street,
+          zip: property.zip,
+          city: property.city,
+          landlordName: String(data.get("landlordName") ?? ""),
+          landlordStreet: String(data.get("landlordStreet") ?? ""),
+          landlordZip: String(data.get("landlordZip") ?? ""),
+          landlordCity: String(data.get("landlordCity") ?? ""),
+          landlordEmail: String(data.get("landlordEmail") ?? ""),
+        }),
+      });
+      const result = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+      if (!response.ok) throw new Error(typeof result?.detail === "string" ? result.detail : "Die Vermieterangaben konnten nicht gespeichert werden.");
+      if (!result || typeof result.id !== "string" || typeof result.name !== "string") throw new Error("Die API hat ungültige Stammdaten zurückgegeben.");
+      upsertProperty({
+        ...property,
+        name: result.name,
+        street: typeof result.street === "string" ? result.street : "",
+        zip: typeof result.zip === "string" ? result.zip : "",
+        city: typeof result.city === "string" ? result.city : "",
+        landlordName: typeof result.landlord_name === "string" ? result.landlord_name : "",
+        landlordStreet: typeof result.landlord_street === "string" ? result.landlord_street : "",
+        landlordZip: typeof result.landlord_zip === "string" ? result.landlord_zip : "",
+        landlordCity: typeof result.landlord_city === "string" ? result.landlord_city : "",
+        landlordEmail: typeof result.landlord_email === "string" ? result.landlord_email : "",
+      });
+    });
+    setSaved(ok);
+  }
+
+  return (
+    <Panel>
+      <SectionHeading note="Wird im PDF als Absender verwendet">Vermieterangaben</SectionHeading>
+      {locked ? <p className="text-sm text-ink-muted">Diese Angaben sind gesperrt, weil bereits eine Abrechnung abgeschlossen ist. Für neue PDFs bitte vorher vollständig eintragen.</p> : (
+        <form onSubmit={(event) => void onSubmit(event)} className="grid gap-5 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label htmlFor="landlord-name" className={fieldLabel}>Name / Firma</label>
+            <input id="landlord-name" name="landlordName" defaultValue={property.landlordName} className={fieldText} autoComplete="name" />
+          </div>
+          <div className="sm:col-span-2">
+            <label htmlFor="landlord-street" className={fieldLabel}>Straße und Hausnummer</label>
+            <input id="landlord-street" name="landlordStreet" defaultValue={property.landlordStreet} className={fieldText} autoComplete="street-address" />
+          </div>
+          <div>
+            <label htmlFor="landlord-zip" className={fieldLabel}>PLZ</label>
+            <input id="landlord-zip" name="landlordZip" defaultValue={property.landlordZip} className={fieldInput} autoComplete="postal-code" />
+          </div>
+          <div>
+            <label htmlFor="landlord-city" className={fieldLabel}>Ort</label>
+            <input id="landlord-city" name="landlordCity" defaultValue={property.landlordCity} className={fieldText} autoComplete="address-level2" />
+          </div>
+          <div className="sm:col-span-2">
+            <label htmlFor="landlord-email" className={fieldLabel}>E-Mail für Rückfragen (optional)</label>
+            <input id="landlord-email" name="landlordEmail" type="email" defaultValue={property.landlordEmail} className={fieldText} autoComplete="email" />
+          </div>
+          <div className="flex flex-wrap items-center gap-4 sm:col-span-2">
+            <button type="submit" className={buttonPrimary}>Vermieterangaben speichern</button>
+            {saved ? <span className="text-sm text-ink-muted">Gespeichert.</span> : null}
+            {error ? <ErrorText>{error}</ErrorText> : null}
+          </div>
+        </form>
+      )}
+    </Panel>
+  );
+}
+
+function PreviousYearCopyPanel({ propertyId, year, costs, costsLoaded }: { propertyId: string; year: number; costs: AppState["costs"]; costsLoaded: boolean }) {
+  const [copying, setCopying] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const sourceYear = year - 1;
+
+  async function onCopy() {
+    setCopying(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const response = await fetch(`/api/properties/${propertyId}/statements/${year}/copy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceYear }),
+      });
+      const result = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+      if (!response.ok) throw new Error(typeof result?.detail === "string" ? result.detail : "Die Vorjahreswerte konnten nicht übernommen werden.");
+      if (!Array.isArray(result?.costs)) throw new Error("Die API hat keine Kostenpositionen zurückgegeben.");
+
+      const copied = result.costs.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const record = item as Record<string, unknown>;
+        const amountEur = Number(record.amount_eur);
+        const billingYear = Number(record.billing_year);
+        const key = record.distribution_key;
+        if (typeof record.id !== "string" || typeof record.property_id !== "string" || typeof record.category !== "string" || !Number.isFinite(amountEur) || billingYear !== year || (key !== "flaeche" && key !== "personen" && key !== "einheiten" && key !== "direkt")) return [];
+        return [{ id: record.id, propertyId: record.property_id, year: billingYear, category: record.category, amountCents: Math.round(amountEur * 100), key: key as KeyType, directTenancyId: typeof record.direct_tenancy_id === "string" ? record.direct_tenancy_id : null, receipts: [] as string[] }];
+      });
+      if (copied.length === 0) throw new Error("Die kopierten Kostenpositionen konnten nicht gelesen werden.");
+      replaceCostsForYear(propertyId, year, copied);
+      setMessage(`${copied.length} Kostenposition${copied.length === 1 ? "" : "en"} aus ${sourceYear} übernommen. Belege bitte neu zuordnen.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Die Vorjahreswerte konnten nicht übernommen werden.");
+    } finally {
+      setCopying(false);
+    }
+  }
+
+  return (
+    <Panel>
+      <SectionHeading note="Beträge und Verteilungsschlüssel werden als Entwurf übernommen">Vorjahresabrechnung</SectionHeading>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="max-w-2xl text-sm leading-relaxed text-ink-muted">
+          Übernimm die Kostenpositionen aus {sourceYear} für {year}. Die alten Belege werden bewusst nicht kopiert, damit keine falschen Nachweise am neuen Jahr hängen.
+        </p>
+        <button type="button" onClick={() => void onCopy()} disabled={!costsLoaded || costs.length > 0 || copying} className={buttonQuiet}>
+          {copying ? "Wird übernommen …" : costs.length > 0 ? "Bereits Kosten angelegt" : `${sourceYear} übernehmen`}
+        </button>
+      </div>
+      {message ? <p className="mt-4 text-sm text-ink-muted">{message}</p> : null}
+      {error ? <div className="mt-4"><ErrorText>{error}</ErrorText></div> : null}
+    </Panel>
   );
 }
 
@@ -396,15 +542,18 @@ function TenanciesPanel({
   locked: boolean;
 }) {
   const { error, runAsync } = useFormError();
+  const [editingId, setEditingId] = useState<string | null>(null);
   const unitLabel = new Map(units.map((unit) => [unit.id, unit.label]));
+  const editing = tenancies.find((tenancy) => tenancy.id === editingId) ?? null;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
     const saved = await runAsync(async () => {
-      const response = await fetch(`/api/properties/${units[0]?.propertyId ?? ""}/tenancies`, {
-        method: "POST",
+      const propertyId = units[0]?.propertyId ?? "";
+      const response = await fetch(editing ? `/api/properties/${propertyId}/tenancies/${editing.id}` : `/api/properties/${propertyId}/tenancies`, {
+        method: editing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           unitId: String(data.get("unit") ?? ""),
@@ -413,6 +562,10 @@ function TenanciesPanel({
           endDate: String(data.get("to") ?? "") || null,
           persons: String(data.get("persons") ?? ""),
           monthlyPrepaymentEur: String(data.get("prepayment") ?? "").replace(",", "."),
+          prepaymentMode: String(data.get("prepaymentMode") ?? "kalendermonate"),
+          tenantStreet: String(data.get("tenantStreet") ?? ""),
+          tenantZip: String(data.get("tenantZip") ?? ""),
+          tenantCity: String(data.get("tenantCity") ?? ""),
         }),
       });
 
@@ -438,9 +591,16 @@ function TenanciesPanel({
         to: result.end_date ? String(result.end_date) : null,
         persons,
         prepaymentCents: Math.round(prepayment * 100),
+        prepaymentMode: result.prepayment_mode === "taggenau" ? "taggenau" : "kalendermonate",
+        tenantStreet: typeof result.tenant_street === "string" ? result.tenant_street : "",
+        tenantZip: typeof result.tenant_zip === "string" ? result.tenant_zip : "",
+        tenantCity: typeof result.tenant_city === "string" ? result.tenant_city : "",
       });
     });
-    if (saved) form.reset();
+    if (saved) {
+      form.reset();
+      setEditingId(null);
+    }
   }
 
   return (
@@ -454,7 +614,9 @@ function TenanciesPanel({
             <p className="mb-8 text-base text-ink-muted">Kein Mietverhältnis in {year}. Leerstand wird in der Abrechnung ausgewiesen.</p>
           ) : (
             <ul className="mb-8 divide-y divide-dashed divide-rule">
-              {tenancies.map((tenancy) => (
+              {tenancies.map((tenancy) => {
+                const tenancyDays = activeDays(tenancy, year);
+                return (
                 <li key={tenancy.id} className="grid gap-2 py-4 sm:grid-cols-[10rem_1fr_auto] sm:items-baseline sm:gap-6">
                   <span className="font-semibold">{unitLabel.get(tenancy.unitId) ?? "–"}</span>
                   <span>
@@ -462,20 +624,27 @@ function TenanciesPanel({
                     <span className="block text-sm text-ink-muted">
                       {formatDateDe(tenancy.from)} – {tenancy.to ? formatDateDe(tenancy.to) : "laufend"} · {tenancy.persons} Person{tenancy.persons === 1 ? "" : "en"}
                     </span>
+                    <span className="mt-2 inline-flex border border-rule px-2 py-1 font-mono text-xs tabular-nums text-ink-muted">
+                      {tenancyDays} von {daysInYear(year)} Tagen im Abrechnungszeitraum
+                    </span>
                   </span>
-                  <span className="font-mono text-sm tabular-nums">{formatEur(tenancy.prepaymentCents)} / Monat</span>
+                  <span className="flex flex-wrap items-center justify-end gap-3 font-mono text-sm tabular-nums">
+                    {formatEur(tenancy.prepaymentCents)} / Monat · {tenancy.prepaymentMode === "taggenau" ? "taggenau" : "Kalendermonate"}
+                    {!locked ? <button type="button" className={`${buttonQuiet} min-h-0 font-sans text-sm`} onClick={() => setEditingId(tenancy.id)}>Bearbeiten</button> : null}
+                  </span>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
 
           {locked ? (
             <p className="text-sm text-ink-muted">Mietverhältnisse sind gesperrt, weil eine Abrechnung dieses Objekts abgeschlossen ist.</p>
           ) : (
-            <form onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-2">
+            <form key={editing?.id ?? "new-tenancy"} onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-2">
               <div>
                 <label htmlFor="tenancy-unit" className={fieldLabel}>Einheit</label>
-                <select id="tenancy-unit" name="unit" required className={selectClass} defaultValue={units[0]?.id}>
+                <select id="tenancy-unit" name="unit" required className={selectClass} defaultValue={editing?.unitId ?? units[0]?.id}>
                   {units.map((unit) => (
                     <option key={unit.id} value={unit.id}>{unit.label}</option>
                   ))}
@@ -483,26 +652,46 @@ function TenanciesPanel({
               </div>
               <div>
                 <label htmlFor="tenancy-tenant" className={fieldLabel}>Mietpartei</label>
-                <input id="tenancy-tenant" name="tenant" required placeholder="Name oder Bezeichnung" className={fieldText} />
+                <input id="tenancy-tenant" name="tenant" required placeholder="Name oder Bezeichnung" defaultValue={editing?.tenant ?? ""} className={fieldText} />
               </div>
               <div>
                 <label htmlFor="tenancy-from" className={fieldLabel}>Einzug</label>
-                <input id="tenancy-from" name="from" type="date" required className={fieldText} />
+                <input id="tenancy-from" name="from" type="date" required defaultValue={editing?.from ?? ""} className={fieldText} />
               </div>
               <div>
                 <label htmlFor="tenancy-to" className={fieldLabel}>Auszug (leer = laufend)</label>
-                <input id="tenancy-to" name="to" type="date" className={fieldText} />
+                <input id="tenancy-to" name="to" type="date" defaultValue={editing?.to ?? ""} className={fieldText} />
               </div>
               <div>
                 <label htmlFor="tenancy-persons" className={fieldLabel}>Personen</label>
-                <input id="tenancy-persons" name="persons" type="number" min={1} step={1} required defaultValue={1} className={fieldInput} />
+                <input id="tenancy-persons" name="persons" type="number" min={1} step={1} required defaultValue={editing?.persons ?? 1} className={fieldInput} />
               </div>
               <div>
                 <label htmlFor="tenancy-prepayment" className={fieldLabel}>Vorauszahlung pro Monat in €</label>
-                <input id="tenancy-prepayment" name="prepayment" inputMode="decimal" required placeholder="180,00" className={fieldInput} />
+                <input id="tenancy-prepayment" name="prepayment" inputMode="decimal" required placeholder="180,00" defaultValue={editing ? (editing.prepaymentCents / 100).toFixed(2).replace(".", ",") : ""} className={fieldInput} />
+              </div>
+              <div>
+                <label htmlFor="tenancy-prepayment-mode" className={fieldLabel}>Vorauszahlungslogik</label>
+                <select id="tenancy-prepayment-mode" name="prepaymentMode" className={selectClass} defaultValue={editing?.prepaymentMode ?? "kalendermonate"}>
+                  <option value="kalendermonate">Kalendermonate (Standard)</option>
+                  <option value="taggenau">Taggenau (Teilmonate anteilig)</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="tenancy-street" className={fieldLabel}>Straße und Hausnummer (optional)</label>
+                <input id="tenancy-street" name="tenantStreet" defaultValue={editing?.tenantStreet ?? ""} className={fieldText} />
+              </div>
+              <div>
+                <label htmlFor="tenancy-zip" className={fieldLabel}>PLZ (optional)</label>
+                <input id="tenancy-zip" name="tenantZip" defaultValue={editing?.tenantZip ?? ""} className={fieldInput} />
+              </div>
+              <div>
+                <label htmlFor="tenancy-city" className={fieldLabel}>Ort (optional)</label>
+                <input id="tenancy-city" name="tenantCity" defaultValue={editing?.tenantCity ?? ""} className={fieldText} />
               </div>
               <div className="sm:col-span-2 space-y-4">
                 {error ? <ErrorText>{error}</ErrorText> : null}
+                {editing ? <button type="button" className={buttonQuiet} onClick={() => setEditingId(null)}>Abbrechen</button> : null}
                 <button type="submit" className={buttonPrimary}>Mietverhältnis speichern</button>
               </div>
             </form>
@@ -519,11 +708,13 @@ function CostsPanel({
   propertyId,
   year,
   costs,
+  tenancies,
   locked,
 }: {
   propertyId: string;
   year: number;
   costs: AppState["costs"];
+  tenancies: AppState["tenancies"];
   locked: boolean;
 }) {
   const { error, runAsync } = useFormError();
@@ -532,6 +723,10 @@ function CostsPanel({
   const [receiptOpenError, setReceiptOpenError] = useState<string | null>(null);
   const [zipDownloading, setZipDownloading] = useState(false);
   const [zipError, setZipError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedKey, setSelectedKey] = useState<KeyType>("flaeche");
+  const [selectedCategory, setSelectedCategory] = useState<string>(COST_CATEGORIES[0]);
+  const editing = costs.find((cost) => cost.id === editingId) ?? null;
 
   async function onDelete(costId: string) {
     const response = await fetch(`/api/properties/${propertyId}/costs/${costId}`, { method: "DELETE" });
@@ -547,14 +742,16 @@ function CostsPanel({
     const form = event.currentTarget;
     const data = new FormData(form);
     const saved = await runAsync(async () => {
-      const response = await fetch(`/api/properties/${propertyId}/costs`, {
-        method: "POST",
+      const submittedKey = String(data.get("key") ?? "flaeche") as KeyType;
+      const response = await fetch(editing ? `/api/properties/${propertyId}/costs/${editing.id}` : `/api/properties/${propertyId}/costs`, {
+        method: editing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           billingYear: year,
           category: String(data.get("category") ?? COST_CATEGORIES[0]),
           amountEur: String(data.get("amount") ?? "").replace(",", "."),
-          distributionKey: String(data.get("key") ?? "flaeche"),
+          distributionKey: submittedKey,
+          directTenancyId: String(data.get("directTenancyId") ?? ""),
         }),
       });
 
@@ -569,7 +766,7 @@ function CostsPanel({
       const amountEur = Number(result.amount_eur);
       const billingYear = Number(result.billing_year);
       const key = result.distribution_key;
-      if (!Number.isFinite(amountEur) || !Number.isInteger(billingYear) || (key !== "flaeche" && key !== "personen" && key !== "einheiten")) {
+      if (!Number.isFinite(amountEur) || !Number.isInteger(billingYear) || (key !== "flaeche" && key !== "personen" && key !== "einheiten" && key !== "direkt")) {
         throw new Error("Die API hat ungültige Kostendaten zurückgegeben.");
       }
 
@@ -580,10 +777,16 @@ function CostsPanel({
         category: String(result.category ?? ""),
         amountCents: Math.round(amountEur * 100),
         key,
-        receipts: [],
+        directTenancyId: typeof result.direct_tenancy_id === "string" ? result.direct_tenancy_id : null,
+        receipts: typeof result.receipt_path === "string" && result.receipt_path ? [result.receipt_path.split("/").at(-1) ?? result.receipt_path] : editing?.receipts ?? [],
       });
     });
-    if (saved) form.reset();
+    if (saved) {
+      form.reset();
+      setEditingId(null);
+      setSelectedKey("flaeche");
+      setSelectedCategory(COST_CATEGORIES[0]);
+    }
   }
 
   async function onReceipt(event: FormEvent<HTMLFormElement>, cost: AppState["costs"][number]) {
@@ -680,6 +883,9 @@ function CostsPanel({
                 <div className="flex items-center gap-5">
                   <span className="font-mono text-lg font-semibold tabular-nums">{formatEur(cost.amountCents)}</span>
                   {locked ? null : (
+                    <button type="button" className={`${buttonQuiet} min-h-0 text-sm`} onClick={() => { setEditingId(cost.id); setSelectedKey(cost.key); setSelectedCategory(cost.category); }}>Bearbeiten</button>
+                  )}
+                  {locked ? null : (
                     <button
                       type="button"
                       className={`${buttonQuiet} min-h-0 text-sm text-stamp-deep`}
@@ -743,28 +949,47 @@ function CostsPanel({
       {locked ? (
         <p className="text-sm text-ink-muted">Kosten sind gesperrt, weil die Abrechnung {year} abgeschlossen ist.</p>
       ) : (
-        <form onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+        <form key={editing?.id ?? "new-cost"} onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
           <div>
             <label htmlFor="cost-category" className={fieldLabel}>Kostenart</label>
-            <select id="cost-category" name="category" className={selectClass} defaultValue={COST_CATEGORIES[0]}>
+            <select id="cost-category" name="category" className={selectClass} value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)}>
               {COST_CATEGORIES.map((category) => (
                 <option key={category} value={category}>{category}</option>
               ))}
             </select>
+            {selectedCategory === "Sonstige Kosten" || selectedCategory === "Sonstiges" ? (
+              <p role="note" className="mt-2 text-xs leading-relaxed text-ink-muted">
+                Hinweis: Nur umlagefähige Betriebskosten laut Mietvertrag und BetrKV eintragen. Reparatur-, Instandhaltungs- oder reine Verwaltungskosten gehören nicht in diese Abrechnung.
+              </p>
+            ) : null}
           </div>
           <div>
             <label htmlFor="cost-amount" className={fieldLabel}>Betrag in € (Jahr)</label>
-            <input id="cost-amount" name="amount" inputMode="decimal" required placeholder="1.200,00" className={fieldInput} />
+            <input id="cost-amount" name="amount" inputMode="decimal" required placeholder="1.200,00" defaultValue={editing ? (editing.amountCents / 100).toFixed(2).replace(".", ",") : ""} className={fieldInput} />
           </div>
           <div>
             <label htmlFor="cost-key" className={fieldLabel}>Verteilungsschlüssel</label>
-            <select id="cost-key" name="key" className={selectClass} defaultValue="flaeche">
+            <select id="cost-key" name="key" className={selectClass} value={selectedKey} onChange={(event) => setSelectedKey(event.target.value as KeyType)}>
               {keyOptions.map((option) => (
                 <option key={option.key} value={option.key}>{option.label}</option>
               ))}
             </select>
           </div>
-          <button type="submit" className={buttonPrimary}>Kosten speichern</button>
+          {selectedKey === "direkt" ? (
+            <div className="sm:col-span-2">
+              <label htmlFor="cost-direct-tenancy" className={fieldLabel}>Mietverhältnis aus externer Abrechnung</label>
+              {tenancies.length === 0 ? <p className="text-sm text-stamp-deep">Für dieses Jahr ist noch kein Mietverhältnis hinterlegt.</p> : (
+                <select id="cost-direct-tenancy" name="directTenancyId" required className={selectClass} defaultValue={editing?.directTenancyId ?? ""}>
+                  <option value="">Bitte auswählen</option>
+                  {tenancies.map((tenancy) => <option key={tenancy.id} value={tenancy.id}>{tenancy.tenant} · {tenancy.from} – {tenancy.to ?? "laufend"}</option>)}
+                </select>
+              )}
+            </div>
+          ) : null}
+          <div className="flex flex-wrap gap-3">
+            <button type="submit" className={buttonPrimary}>{editing ? "Änderung speichern" : "Kosten speichern"}</button>
+            {editing ? <button type="button" className={buttonQuiet} onClick={() => { setEditingId(null); setSelectedKey("flaeche"); setSelectedCategory(COST_CATEGORIES[0]); }}>Abbrechen</button> : null}
+          </div>
           {error ? <div className="sm:col-span-4"><ErrorText>{error}</ErrorText></div> : null}
         </form>
       )}

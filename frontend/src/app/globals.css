@@ -21,8 +21,8 @@
   --color-rule: var(--rule);
   --color-stamp: var(--stamp);
   --color-stamp-deep: var(--stamp-deep);
-  --font-sans: var(--font-display);
-  --font-mono: var(--font-figures);
+  --font-sans: "Archivo", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
 html {
@@ -32,7 +32,7 @@ html {
 body {
   background: var(--desk);
   color: var(--ink);
-  font-family: var(--font-display), system-ui, sans-serif;
+  font-family: "Archivo", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

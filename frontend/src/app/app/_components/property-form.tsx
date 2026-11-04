@@ -69,6 +69,11 @@ export function PropertyForm() {
         street: created.street ?? "",
         zip: created.zip ?? "",
         city: created.city ?? "",
+        landlordName: "",
+        landlordStreet: "",
+        landlordZip: "",
+        landlordCity: "",
+        landlordEmail: "",
       });
       router.push(`/app/objekte/${created.id}/${settlementYear()}`);
     } catch (caught) {

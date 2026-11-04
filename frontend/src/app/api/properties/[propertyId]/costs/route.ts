@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkFinalizedStatement } from "@/lib/supabase/statement-lock";
+import { overlapsCalendarYear } from "@/lib/domain/dates";
 
 type RouteContext = { params: Promise<{ propertyId: string }> };
-const distributionKeys = new Set(["flaeche", "personen", "einheiten"]);
+const distributionKeys = new Set(["flaeche", "personen", "einheiten", "direkt"]);
 
 export async function GET(_request: Request, context: RouteContext) {
   const { propertyId } = await context.params;
@@ -23,7 +24,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const { data: costs, error } = await supabase
     .from("cost_items")
-    .select("id, property_id, billing_year, category, amount_eur, distribution_key, receipt_path")
+    .select("id, property_id, billing_year, category, amount_eur, distribution_key, direct_tenancy_id, receipt_path")
     .eq("property_id", propertyId)
     .order("created_at", { ascending: true });
 
@@ -67,6 +68,7 @@ export async function POST(request: Request, context: RouteContext) {
   const category = typeof record.category === "string" ? record.category.trim() : "";
   const amountEur = typeof record.amountEur === "number" ? record.amountEur : Number(record.amountEur);
   const distributionKey = typeof record.distributionKey === "string" ? record.distributionKey : "";
+  const directTenancyId = typeof record.directTenancyId === "string" ? record.directTenancyId.trim() : "";
 
   if (!Number.isInteger(billingYear) || billingYear < 2000 || billingYear > 2100) {
     return NextResponse.json({ detail: "Das Abrechnungsjahr ist ungültig." }, { status: 400 });
@@ -79,6 +81,12 @@ export async function POST(request: Request, context: RouteContext) {
   }
   if (!distributionKeys.has(distributionKey)) {
     return NextResponse.json({ detail: "Der Verteilungsschlüssel ist ungültig." }, { status: 400 });
+  }
+  if (distributionKey === "direkt" && !/^[0-9a-f-]{36}$/i.test(directTenancyId)) {
+    return NextResponse.json({ detail: "Bitte ein Mietverhältnis für die externe Direktabrechnung auswählen." }, { status: 400 });
+  }
+  if (distributionKey !== "direkt" && directTenancyId) {
+    return NextResponse.json({ detail: "Ein Mietverhältnis darf nur bei einer externen Direktabrechnung verknüpft werden." }, { status: 400 });
   }
 
   const lock = await checkFinalizedStatement(supabase, propertyId, billingYear);
@@ -103,6 +111,15 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ detail: "Objekt nicht gefunden." }, { status: 404 });
   }
 
+  if (distributionKey === "direkt") {
+    const { data: units, error: unitsError } = await supabase.from("units").select("id").eq("property_id", propertyId);
+    if (unitsError) return NextResponse.json({ detail: "Die Ziel-Einheit konnte nicht geprüft werden." }, { status: 502 });
+    const unitIds = (units ?? []).map((unit) => unit.id);
+    const { data: tenancy } = await supabase.from("tenancies").select("id, unit_id, start_date, end_date").eq("id", directTenancyId).maybeSingle();
+    if (tenancy && !overlapsCalendarYear(tenancy.start_date, tenancy.end_date, billingYear)) return NextResponse.json({ detail: "Das Ziel-MietverhÃ¤ltnis ist im Abrechnungsjahr nicht aktiv." }, { status: 400 });
+    if (!tenancy || !unitIds.includes(tenancy.unit_id)) return NextResponse.json({ detail: "Das Ziel-Mietverhältnis gehört nicht zu diesem Objekt." }, { status: 400 });
+  }
+
   const { data: cost, error } = await supabase
     .from("cost_items")
     .insert({
@@ -112,8 +129,9 @@ export async function POST(request: Request, context: RouteContext) {
       category,
       amount_eur: amountEur,
       distribution_key: distributionKey,
+      direct_tenancy_id: distributionKey === "direkt" ? directTenancyId : null,
     })
-    .select("id, property_id, billing_year, category, amount_eur, distribution_key, receipt_path")
+    .select("id, property_id, billing_year, category, amount_eur, distribution_key, direct_tenancy_id, receipt_path")
     .single();
 
   if (error || !cost) {

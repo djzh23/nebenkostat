@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
+import { isValidIsoDate } from "@/lib/domain/dates";
 import { createClient } from "@/lib/supabase/server";
 import { checkFinalizedStatement } from "@/lib/supabase/statement-lock";
 
 type RouteContext = { params: Promise<{ propertyId: string }> };
 
-function isIsoDate(value: unknown): value is string {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+function optionalText(record: Record<string, unknown>, key: string, max: number): string | null {
+  const value = record[key];
+  if (value === undefined || value === null) return "";
+  return typeof value === "string" && value.trim().length <= max ? value.trim() : null;
 }
 
 export async function GET(_request: Request, context: RouteContext) {
@@ -37,7 +40,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const { data: tenancies, error } = await supabase
     .from("tenancies")
-    .select("id, unit_id, tenant_name, persons, monthly_prepayment_eur, start_date, end_date")
+    .select("id, unit_id, tenant_name, persons, monthly_prepayment_eur, start_date, end_date, prepayment_mode, tenant_street, tenant_zip, tenant_city")
     .in("unit_id", unitIds)
     .order("start_date", { ascending: true });
   if (error) {
@@ -97,6 +100,10 @@ export async function POST(request: Request, context: RouteContext) {
       : Number(record.monthlyPrepaymentEur);
   const startDate = record.startDate;
   const endDate = record.endDate ? record.endDate : null;
+  const prepaymentMode = record.prepaymentMode === undefined ? "kalendermonate" : record.prepaymentMode;
+  const tenantStreet = optionalText(record, "tenantStreet", 160);
+  const tenantZip = optionalText(record, "tenantZip", 20);
+  const tenantCity = optionalText(record, "tenantCity", 120);
 
   if (!/^[0-9a-f-]{36}$/i.test(unitId)) {
     return NextResponse.json({ detail: "Ungültige Einheiten-ID." }, { status: 400 });
@@ -113,11 +120,17 @@ export async function POST(request: Request, context: RouteContext) {
   if (!Number.isFinite(monthlyPrepaymentEur) || monthlyPrepaymentEur < 0 || monthlyPrepaymentEur > 1_000_000) {
     return NextResponse.json({ detail: "Die monatliche Vorauszahlung ist ungültig." }, { status: 400 });
   }
-  if (!isIsoDate(startDate) || (endDate !== null && !isIsoDate(endDate))) {
+  if (!isValidIsoDate(startDate) || (endDate !== null && !isValidIsoDate(endDate))) {
     return NextResponse.json({ detail: "Bitte gültige Ein- und Auszugsdaten angeben." }, { status: 400 });
   }
   if (endDate !== null && endDate < startDate) {
     return NextResponse.json({ detail: "Das Auszugsdatum liegt vor dem Einzugsdatum." }, { status: 400 });
+  }
+  if (prepaymentMode !== "kalendermonate" && prepaymentMode !== "taggenau") {
+    return NextResponse.json({ detail: "Die Vorauszahlungslogik ist ungültig." }, { status: 400 });
+  }
+  if ([tenantStreet, tenantZip, tenantCity].some((value) => value === null)) {
+    return NextResponse.json({ detail: "Eine Adressangabe der Mietpartei ist zu lang oder ungültig." }, { status: 400 });
   }
 
   const { data: unit } = await supabase
@@ -164,8 +177,12 @@ export async function POST(request: Request, context: RouteContext) {
       monthly_prepayment_eur: monthlyPrepaymentEur,
       start_date: startDate,
       end_date: endDate,
+      prepayment_mode: prepaymentMode,
+      tenant_street: tenantStreet || null,
+      tenant_zip: tenantZip || null,
+      tenant_city: tenantCity || null,
     })
-    .select("id, unit_id, tenant_name, persons, monthly_prepayment_eur, start_date, end_date")
+    .select("id, unit_id, tenant_name, persons, monthly_prepayment_eur, start_date, end_date, prepayment_mode, tenant_street, tenant_zip, tenant_city")
     .single();
 
   if (error || !tenancy) {

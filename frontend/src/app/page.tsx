@@ -1,5 +1,6 @@
 import { ReceiptCalculator } from "./_components/receipt-calculator";
 import { CalculatorCta } from "./_components/calculator-cta";
+import Link from "next/link";
 import { ButtonLink } from "@/components/ui/button";
 import { Receipt } from "@/components/ui/receipt";
 import { Container, Section, SplitSection } from "@/components/ui/layout";
@@ -26,14 +27,13 @@ const keys = [
 
 const freeFeatures = [
   "1 Objekt mit bis zu 5 Wohneinheiten",
-  "Kostenpositionen und Belege unbegrenzt",
+  "Kostenpositionen; Belege bis 10 MB pro Datei",
   "Abrechnung berechnen und als PDF exportieren",
   "Belegarchiv als ZIP exportieren",
 ];
 
-const proFeatures = ["Unbegrenzte Objekte und Wohneinheiten", "Alles aus dem kostenlosen Tarif"];
 
-const disclaimer = "Erstellt mit Unterstützung der App. Prüfung durch den Vermieter bzw. eine Fachberatung erforderlich.";
+const disclaimer = "Erstellt mit Nebenkostat. Prüfung durch den Vermieter bzw. eine Fachberatung erforderlich.";
 
 export default function Home() {
   return (
@@ -48,34 +48,32 @@ export default function Home() {
             <a href="#preise" className="underline-offset-4 hover:underline">Preise</a>
             <a href="#rechtshinweis" className="underline-offset-4 hover:underline">Rechtshinweis</a>
           </nav>
-          <div className="flex items-center gap-4">
-            <ButtonLink href="/login" size="sm">
-              Kostenlos starten
-            </ButtonLink>
-          </div>
+          <ButtonLink href="/login" variant="quiet" size="sm">
+            Anmelden
+          </ButtonLink>
         </Container>
       </header>
 
       <main id="top">
         <Container className="grid gap-14 pt-12 pb-20 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:pt-20 lg:pb-28">
           <div className="min-w-0 max-w-2xl">
-            <PageTitle>Deine Abrechnung. Jede Zeile nachrechenbar.</PageTitle>
+            <PageTitle>Nebenkosten, die du selbst nachrechnen kannst.</PageTitle>
             <p className="mt-7 max-w-xl text-lg leading-relaxed text-ink-muted md:text-xl">
-              Für Privatvermieter mit 2 bis 5 Wohneinheiten: Kosten nach Fläche verteilen, Belege pro Objekt archivieren
-              und die Abrechnung als PDF exportieren.
+              Für private Vermieter mit 2 bis 5 Wohneinheiten: Kosten verteilen, Belege je Objekt sammeln und eine
+              nachvollziehbare Abrechnung als PDF ausgeben.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-5">
-              <CalculatorCta className="md:min-w-56">
-                Erste Umlage rechnen
-              </CalculatorCta>
-              <ButtonLink href="#ablauf" variant="quiet">
-                So funktioniert’s
+              <ButtonLink href="/login" className="md:min-w-52">
+                Kostenlos starten
               </ButtonLink>
+              <CalculatorCta>
+                Rechenweg ansehen
+              </CalculatorCta>
             </div>
-            <p className="mt-6 text-sm text-ink-muted">Kostenlos bis 1 Objekt mit 5 Einheiten.</p>
+            <p className="mt-6 text-sm text-ink-muted">1 Objekt mit bis zu 5 Einheiten kostenlos.</p>
           </div>
 
-          <div id="rechner" className="flex justify-center scroll-mt-8 lg:justify-end">
+          <div id="rechner" className="flex min-w-0 w-full justify-center overflow-hidden scroll-mt-8 lg:justify-end">
             <ReceiptCalculator />
           </div>
         </Container>
@@ -83,7 +81,7 @@ export default function Home() {
         <Section divided>
           <Container>
             <SplitSection
-              heading={<SectionTitle>Eine Abrechnung ist nur so gut wie ihre Belege und ihre Nachrechenbarkeit.</SectionTitle>}
+              heading={<SectionTitle>Vom Beleg bis zur fertigen Abrechnung.</SectionTitle>}
             >
               <Receipt padding="md">
                 <div className="grid grid-cols-2 gap-6 border-b border-ink pb-3 font-mono text-xs font-semibold uppercase tracking-widest text-ink-muted">
@@ -105,7 +103,7 @@ export default function Home() {
 
         <Section id="ablauf" divided>
           <Container>
-            <SplitSection heading={<SectionTitle>Drei Eingaben bis zur ersten Formel.</SectionTitle>}>
+            <SplitSection heading={<SectionTitle>Der erste Rechenweg entsteht in drei Eingaben.</SectionTitle>}>
               <Receipt padding="md">
                 <ol>
                   {steps.map(([title, detail], index) => (
@@ -153,36 +151,36 @@ export default function Home() {
 
         <Section id="preise" divided>
           <Container>
-            <SectionTitle>Ein kostenloser Start. Export bleibt in jedem Tarif frei.</SectionTitle>
+            <SectionTitle>Beta-Start: kostenlos und mit echtem Rechenweg.</SectionTitle>
             <div className="mt-14 grid gap-8 md:grid-cols-2">
               <Receipt padding="lg" className="flex flex-col">
-                <p className="font-sans text-lg font-bold">Free</p>
+                <p className="font-sans text-lg font-bold">Kostenlose Beta</p>
                 <p className="mt-3 font-mono text-5xl font-semibold tabular-nums tracking-tight">0 €</p>
                 <ul className="mt-8 flex-1 space-y-3 border-t border-dashed border-rule pt-6 text-base">
                   {freeFeatures.map((feature) => (
                     <li key={feature}>{feature}</li>
                   ))}
                 </ul>
-                <ButtonLink href="/beispiel-pdf" className="mt-10 w-full md:w-auto">
+                <ButtonLink href="/beispiel-pdf" variant="quiet" className="mt-10 w-fit">
                   Beispiel-PDF ansehen
                 </ButtonLink>
               </Receipt>
 
               <Receipt padding="lg" tone="outline" className="flex flex-col">
-                <p className="font-sans text-lg font-bold">Pro</p>
-                <p className="mt-3 font-mono text-5xl font-semibold tabular-nums tracking-tight text-stamp">2 €</p>
-                <p className="mt-2 text-base text-ink-muted">pro Einheit und Jahr, mindestens 19 € im Jahr</p>
-                <ul className="mt-8 flex-1 space-y-3 border-t border-dashed border-rule pt-6 text-base">
-                  {proFeatures.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
-                <p className="mt-10 text-sm text-ink-muted">Pro-Tarif wird später ergänzt.</p>
+                <p className="font-sans text-lg font-bold">Frühzugang</p>
+                <p className="mt-3 font-sans text-3xl font-black tracking-tight text-stamp">Mitgestalten</p>
+                <p className="mt-3 text-base leading-relaxed text-ink-muted">
+                  Hilf uns mit echtem Feedback. Bevor eine Bezahlversion startet, kündigen wir Preis und Umfang
+                  transparent an. Frühe Tester erhalten ein günstiges Einführungsangebot.
+                </p>
+                <p className="mt-8 border-t border-dashed border-rule pt-6 text-base">
+                  Keine Zahlungsdaten. Keine automatische Verlängerung. Export und deine Daten bleiben zugänglich.
+                </p>
               </Receipt>
             </div>
             <p className="mt-8 max-w-2xl text-sm leading-relaxed text-ink-muted">
-              Der Pro-Preis ist ein Vorschlag und wird im Test mit ersten Vermietern geprüft. Bestehende Daten bleiben bei
-              jedem Tarif zugänglich. Nichts wird gelöscht.
+              Die Beta begrenzt den Start auf 1 Objekt und insgesamt 5 Wohneinheiten. Diese Grenze schützt den Betrieb,
+              ohne Berechnung, PDF-Export oder Belegarchiv künstlich zu sperren.
             </p>
           </Container>
         </Section>
@@ -199,25 +197,22 @@ export default function Home() {
           </Container>
         </Section>
 
-        <Section divided>
-          <Container>
-            <Receipt padding="lg" className="flex flex-col gap-10 md:flex-row md:items-end md:justify-between">
-              <div className="min-w-0">
-                <SectionTitle>Verstehe den Ablauf in drei Eingaben.</SectionTitle>
-                <p className="mt-5 text-lg text-ink-muted">Vom Objekt bis zur Formel-Karte, ohne Umwege.</p>
-              </div>
-              <ButtonLink href="#ablauf" className="w-full md:w-auto">
-                So funktioniert’s
-              </ButtonLink>
-            </Receipt>
-          </Container>
-        </Section>
       </main>
 
       <footer className="border-t border-ink/20">
         <Container className="flex flex-col gap-3 py-10 text-sm text-ink-muted md:flex-row md:items-center md:justify-between">
           <p className="font-sans font-bold text-ink">Nebenkostat</p>
-          <p>Impressum und Datenschutzerklärung werden vor der Veröffentlichung ergänzt.</p>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <nav aria-label="Rechtliches" className="flex gap-5">
+              <Link href="/impressum" className="underline decoration-ink/30 decoration-2 underline-offset-4 hover:decoration-stamp">
+                Impressum
+              </Link>
+              <Link href="/datenschutz" className="underline decoration-ink/30 decoration-2 underline-offset-4 hover:decoration-stamp">
+                Datenschutz
+              </Link>
+            </nav>
+            <p>Vor Veröffentlichung vollständig mit den Betreiberangaben ergänzen.</p>
+          </div>
         </Container>
       </footer>
     </>

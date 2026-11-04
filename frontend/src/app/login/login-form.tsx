@@ -18,19 +18,30 @@ export function LoginForm() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/confirm`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
     if (error) {
       setStatus("error");
+      const errorMessage = error.message.toLowerCase();
+      const errorStatus = typeof error.status === "number" ? error.status : null;
       const isNetworkError =
         error.name === "AuthRetryableFetchError" ||
-        error.message.toLowerCase().includes("fetch failed");
+        errorMessage.includes("fetch failed");
+      const isMailDeliveryError =
+        (errorStatus !== null && errorStatus >= 500) ||
+        errorMessage.includes("sending magic link") ||
+        errorMessage.includes("email provider");
+      const isRateLimitError = errorStatus === 429 || errorMessage.includes("rate limit");
       setMessage(
-        isNetworkError
-          ? "Supabase ist gerade nicht erreichbar. Bitte prüfe Internetverbindung, VPN oder DNS."
-          : "Der Login-Link konnte nicht verschickt werden. Bitte prüfe die E-Mail-Adresse.",
+        isMailDeliveryError
+          ? "Supabase ist erreichbar, konnte die Login-E-Mail aber nicht versenden. Bitte prüfe die SMTP-/Resend-Konfiguration."
+          : isRateLimitError
+            ? "Zu viele Login-Anfragen. Bitte warte kurz und versuche es erneut."
+            : isNetworkError
+              ? "Supabase ist gerade nicht erreichbar. Bitte prüfe Internetverbindung, VPN oder DNS."
+              : "Der Login-Link konnte nicht verschickt werden. Bitte prüfe die E-Mail-Adresse.",
       );
       return;
     }

@@ -10,6 +10,11 @@ export const SEED_STATE: AppState = {
       street: "Musterstraße 1",
       zip: "00000",
       city: "Beispielstadt",
+      landlordName: "",
+      landlordStreet: "",
+      landlordZip: "",
+      landlordCity: "",
+      landlordEmail: "",
     },
   ],
   units: [
@@ -26,6 +31,10 @@ export const SEED_STATE: AppState = {
       to: null,
       persons: 2,
       prepaymentCents: 18000,
+      prepaymentMode: "kalendermonate",
+      tenantStreet: "",
+      tenantZip: "",
+      tenantCity: "",
     },
     {
       id: "t-og-alt",
@@ -35,6 +44,10 @@ export const SEED_STATE: AppState = {
       to: "2025-06-30",
       persons: 1,
       prepaymentCents: 12000,
+      prepaymentMode: "kalendermonate",
+      tenantStreet: "",
+      tenantZip: "",
+      tenantCity: "",
     },
     {
       id: "t-og-neu",
@@ -44,6 +57,10 @@ export const SEED_STATE: AppState = {
       to: null,
       persons: 3,
       prepaymentCents: 15000,
+      prepaymentMode: "kalendermonate",
+      tenantStreet: "",
+      tenantZip: "",
+      tenantCity: "",
     },
     {
       id: "t-dg",
@@ -53,6 +70,10 @@ export const SEED_STATE: AppState = {
       to: null,
       persons: 2,
       prepaymentCents: 22000,
+      prepaymentMode: "kalendermonate",
+      tenantStreet: "",
+      tenantZip: "",
+      tenantCity: "",
     },
   ],
   costs: [
@@ -63,6 +84,7 @@ export const SEED_STATE: AppState = {
       category: "Wasser",
       amountCents: 120000,
       key: "flaeche",
+      directTenancyId: null,
       receipts: ["Wasserrechnung 2025 (Beispiel).pdf", "Abwasser 2025 (Beispiel).pdf"],
     },
     {
@@ -72,6 +94,7 @@ export const SEED_STATE: AppState = {
       category: "Müll",
       amountCents: 64000,
       key: "einheiten",
+      directTenancyId: null,
       receipts: ["Müllgebühren 2025 (Beispiel).pdf"],
     },
     {
@@ -81,6 +104,7 @@ export const SEED_STATE: AppState = {
       category: "Heizung",
       amountCents: 280000,
       key: "personen",
+      directTenancyId: null,
       receipts: [],
     },
     {
@@ -90,6 +114,7 @@ export const SEED_STATE: AppState = {
       category: "Grundsteuer",
       amountCents: 45000,
       key: "flaeche",
+      directTenancyId: null,
       receipts: ["Grundsteuerbescheid 2025 (Beispiel).pdf"],
     },
   ],

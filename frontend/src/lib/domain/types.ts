@@ -1,12 +1,14 @@
 // Domain types for the Nebenkostenabrechnung. Money is integer cents, areas are
 // integer hundredths of m², dates are ISO "YYYY-MM-DD" strings (inclusive).
 
-export type KeyType = "flaeche" | "personen" | "einheiten";
+export type KeyType = "flaeche" | "personen" | "einheiten" | "direkt";
+export type PrepaymentMode = "kalendermonate" | "taggenau";
 
 export const KEY_LABELS: Record<KeyType, string> = {
   flaeche: "Wohnfläche",
   personen: "Personen",
   einheiten: "Einheiten",
+  direkt: "Heizkosten / externe Direktabrechnung",
 };
 
 export const COST_CATEGORIES = [
@@ -35,6 +37,11 @@ export type Property = {
   street: string;
   zip: string;
   city: string;
+  landlordName: string;
+  landlordStreet: string;
+  landlordZip: string;
+  landlordCity: string;
+  landlordEmail: string;
 };
 
 export type Unit = {
@@ -52,6 +59,10 @@ export type Tenancy = {
   to: string | null;
   persons: number;
   prepaymentCents: number;
+  prepaymentMode: PrepaymentMode;
+  tenantStreet: string;
+  tenantZip: string;
+  tenantCity: string;
 };
 
 export type CostItem = {
@@ -61,6 +72,7 @@ export type CostItem = {
   category: string;
   amountCents: number;
   key: KeyType;
+  directTenancyId: string | null;
   receipts: string[];
 };
 

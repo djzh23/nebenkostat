@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { checkPropertyCreationLimit } from "@/lib/supabase/entitlements";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
@@ -14,7 +15,7 @@ export async function GET() {
 
   const { data: properties, error } = await supabase
     .from("properties")
-    .select("id, name, street, zip, city")
+    .select("id, name, street, zip, city, landlord_name, landlord_street, landlord_zip, landlord_city, landlord_email")
     .order("created_at", { ascending: true });
 
   if (error) {
@@ -34,6 +35,24 @@ export async function POST(request: Request) {
 
   if (userError || !user) {
     return NextResponse.json({ detail: "Nicht angemeldet." }, { status: 401 });
+  }
+
+  const limit = await checkPropertyCreationLimit(supabase);
+  if (limit.error) {
+    console.error("Objektlimit konnte nicht geprüft werden.", limit.error);
+    return NextResponse.json({ detail: "Das Nutzungslimit konnte nicht geprüft werden." }, { status: 502 });
+  }
+  if (!limit.allowed) {
+    return NextResponse.json(
+      {
+        detail: `Der kostenlose Beta-Start erlaubt nur ${limit.limit} Objekt.`,
+        code: "beta_limit_reached",
+        limit: limit.limit,
+        current: limit.current,
+        upgradeUrl: limit.upgradeUrl,
+      },
+      { status: 403 },
+    );
   }
 
   let input: unknown;
@@ -76,7 +95,7 @@ export async function POST(request: Request) {
       zip: zip || null,
       city: city || null,
     })
-    .select("id, name, street, zip, city")
+    .select("id, name, street, zip, city, landlord_name, landlord_street, landlord_zip, landlord_city, landlord_email")
     .single();
 
   if (error || !property) {

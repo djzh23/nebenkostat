@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatEur } from "@/lib/allocation";
+import { buildBillingChecklist } from "@/lib/domain/checklist";
 import { DomainError, finalizeYear, isFinalized, useAppState } from "@/lib/domain/store";
 import { settleYear } from "@/lib/domain/settlement";
 import { KEY_LABELS } from "@/lib/domain/types";
+import { BillingChecklist, ChecklistAcknowledgement } from "./billing-checklist";
 import {
   buttonPrimary,
   buttonQuiet,
@@ -22,7 +24,7 @@ import {
 } from "../../_components/ui";
 
 const DISCLAIMER =
-  "Erstellt mit Unterstützung der App. Prüfung durch den Vermieter bzw. eine Fachberatung erforderlich.";
+  "Erstellt mit Nebenkostat. Prüfung durch den Vermieter bzw. eine Fachberatung erforderlich.";
 
 function balanceLabel(cents: number): { text: string; tone: "warn" | "ok" | "neutral" } {
   if (cents > 0) return { text: "Nachzahlung", tone: "warn" };
@@ -40,6 +42,9 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [openingPdf, setOpeningPdf] = useState(false);
   const [pdfDownloadError, setPdfDownloadError] = useState<string | null>(null);
+  const [tenantPdfId, setTenantPdfId] = useState<string | null>(null);
+  const [tenantPdfError, setTenantPdfError] = useState<string | null>(null);
+  const [checklistAcknowledged, setChecklistAcknowledged] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +55,10 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
 
       if (response.ok) {
         const statement = (await response.json().catch(() => null)) as Record<string, unknown> | null;
-        if (statement?.pdf_path) setPdfUploaded(true);
+        if (statement?.pdf_path) {
+          setPdfUploaded(true);
+          setPdfError(null);
+        }
         if (!isFinalized(state, propertyId, year)) finalizeYear(propertyId, year);
         return;
       }
@@ -81,6 +89,7 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
   const finalized = isFinalized(state, propertyId, year);
   const finalizedRecord = state.finalized.find((record) => record.propertyId === propertyId && record.year === year);
   const result = settleYear(state, propertyId, year);
+  const checklist = buildBillingChecklist(state, propertyId, year);
   const unitLabel = new Map(state.units.map((unit) => [unit.id, unit.label]));
   const tenancyById = new Map(state.tenancies.map((tenancy) => [tenancy.id, tenancy]));
   const back = `/app/objekte/${propertyId}/${year}`;
@@ -97,6 +106,10 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
   }
 
   async function onFinalize() {
+    if (checklist.openCount > 0 && !checklistAcknowledged) {
+      setError("Bitte bestätige zuerst, dass du die offenen Hinweise der Prüfliste geprüft hast.");
+      return;
+    }
     try {
       const response = await fetch(`/api/properties/${propertyId}/statements/${year}`, {
         method: "POST",
@@ -125,6 +138,7 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
         return false;
       }
       setPdfUploaded(true);
+      setPdfError(null);
       return true;
     } catch {
       setPdfError("Das PDF konnte nicht automatisch archiviert werden. Du kannst es manuell hochladen.");
@@ -168,6 +182,31 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
     }
   }
 
+  async function onDownloadTenantPdf(tenancyId: string, unitLabel: string) {
+    setTenantPdfId(tenancyId);
+    setTenantPdfError(null);
+    try {
+      const response = await fetch(`/api/properties/${propertyId}/statements/${year}/pdf/download?tenancyId=${encodeURIComponent(tenancyId)}`);
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+        throw new Error(typeof payload?.detail === "string" ? payload.detail : "Das Mietparteien-PDF konnte nicht erzeugt werden.");
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Nebenkostenabrechnung-${year}-${unitLabel.replace(/[^a-zA-Z0-9]+/g, "-")}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (caught) {
+      setTenantPdfError(caught instanceof Error ? caught.message : "Das Mietparteien-PDF konnte nicht erzeugt werden.");
+    } finally {
+      setTenantPdfId(null);
+    }
+  }
+
   return (
     <div className="space-y-10">
       <div className="flex flex-wrap items-end justify-between gap-6">
@@ -192,6 +231,8 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
           unveränderlich und bleibt im Archiv einsehbar.
         </Notice>
       ) : null}
+
+      <BillingChecklist state={state} propertyId={propertyId} year={year} />
 
       {finalized ? (
         <Panel>
@@ -293,8 +334,17 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
         ))}
       </section>
 
+      {!finalized ? (
+        <Notice>
+          Ist der Rechenweg so richtig? Dann kannst du im Objekt die restlichen Kosten und Mietverhältnisse anlegen. {" "}
+          <Link href={back} className="font-semibold underline decoration-ink/40 decoration-2 underline-offset-4 hover:decoration-stamp">
+            Zum Objekt zurück
+          </Link>
+        </Notice>
+      ) : null}
+
       <Panel>
-        <SectionHeading note="Kosten minus Vorauszahlungen">Saldo je Mietpartei</SectionHeading>
+        <SectionHeading note="Kosten minus angerechnete Vorauszahlungen laut Mietvertrag">Saldo je Mietpartei</SectionHeading>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[40rem] text-left text-sm">
             <thead>
@@ -303,8 +353,9 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
                 <th scope="col" className="py-2 pr-4 font-semibold">Mietpartei</th>
                 <th scope="col" className="py-2 pr-4 text-right font-semibold">Tage</th>
                 <th scope="col" className="py-2 pr-4 text-right font-semibold">Kosten</th>
-                <th scope="col" className="py-2 pr-4 text-right font-semibold">Vorauszahlung</th>
-                <th scope="col" className="py-2 text-right font-semibold">Saldo</th>
+                <th scope="col" className="py-2 pr-4 text-right font-semibold">Angerechnet</th>
+                <th scope="col" className="py-2 pr-4 text-right font-semibold">Saldo</th>
+                <th scope="col" className="py-2 text-right font-semibold">Versand</th>
               </tr>
             </thead>
             <tbody>
@@ -331,6 +382,18 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
                         <Pill tone={balance.tone}>{balance.text}</Pill>
                       </span>
                     </td>
+                    <td className="py-3 text-right">
+                      {finalized ? (
+                        <button
+                          type="button"
+                          onClick={() => void onDownloadTenantPdf(row.tenancy.id, row.unit.label)}
+                          disabled={tenantPdfId === row.tenancy.id}
+                          className="font-semibold underline decoration-ink/40 decoration-2 underline-offset-4 hover:decoration-stamp disabled:opacity-50"
+                        >
+                          {tenantPdfId === row.tenancy.id ? "Erzeuge …" : "PDF laden"}
+                        </button>
+                      ) : <span className="text-xs text-ink-muted">nach Abschluss</span>}
+                    </td>
                   </tr>
                 );
               })}
@@ -338,6 +401,8 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
           </table>
         </div>
       </Panel>
+
+      {tenantPdfError ? <ErrorText>{tenantPdfError}</ErrorText> : null}
 
       <Panel>
         <p className="border-l-2 border-ink pl-4 text-sm leading-relaxed">
@@ -350,6 +415,9 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
                 <p className="max-w-xl text-sm font-semibold text-stamp-deep">
                   Nach dem Abschließen ist die Berechnung unveränderlich. Kosten, Einheiten und Mietverhältnisse für {year} sind dann gesperrt.
                 </p>
+                {checklist.openCount > 0 ? (
+                  <ChecklistAcknowledgement checked={checklistAcknowledged} onChange={setChecklistAcknowledged} />
+                ) : null}
                 <button type="button" onClick={onFinalize} className={buttonPrimary}>
                   Jetzt abschließen
                 </button>

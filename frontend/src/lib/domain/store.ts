@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { parseEuroToCents, parseM2 } from "@/lib/allocation";
 import { SEED_STATE } from "./seed";
+import { isValidIsoDate } from "./dates";
 import type { AppState, CostItem, FinalizedRecord, KeyType, Property, Tenancy, Unit } from "./types";
 
 // Browser-only UI store. Domain interactions remain here while the data migration
@@ -100,7 +101,18 @@ export function addProperty(input: { name: string; street: string; zip: string; 
     ...current,
     properties: [
       ...current.properties,
-      { id, name, street: input.street.trim(), zip: input.zip.trim(), city: input.city.trim() },
+      {
+        id,
+        name,
+        street: input.street.trim(),
+        zip: input.zip.trim(),
+        city: input.city.trim(),
+        landlordName: "",
+        landlordStreet: "",
+        landlordZip: "",
+        landlordCity: "",
+        landlordEmail: "",
+      },
     ],
   });
   return id;
@@ -167,6 +179,17 @@ export function replaceCostsForProperty(propertyId: string, costs: CostItem[]) {
   });
 }
 
+export function replaceCostsForYear(propertyId: string, year: number, costs: CostItem[]) {
+  getSnapshot();
+  commit({
+    ...current,
+    costs: [
+      ...current.costs.filter((cost) => cost.propertyId !== propertyId || cost.year !== year),
+      ...costs,
+    ],
+  });
+}
+
 export function upsertTenancy(tenancy: Tenancy) {
   getSnapshot();
   const exists = current.tenancies.some((candidate) => candidate.id === tenancy.id);
@@ -206,15 +229,19 @@ export function addTenancy(input: {
   persons: string;
   prepayment: string;
   year: number;
+  prepaymentMode?: "kalendermonate" | "taggenau";
+  tenantStreet?: string;
+  tenantZip?: string;
+  tenantCity?: string;
 }) {
   const unit = current.units.find((candidate) => candidate.id === input.unitId);
   if (!unit) throw new DomainError("Die Einheit wurde nicht gefunden.");
   assertOpen(current, unit.propertyId, input.year);
 
   const tenant = requireText(input.tenant, "Bitte den Namen der Mietpartei eingeben.");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.from)) throw new DomainError("Bitte ein Einzugsdatum angeben.");
+  if (!isValidIsoDate(input.from)) throw new DomainError("Bitte ein gültiges Einzugsdatum angeben.");
   const to = input.to ? input.to : null;
-  if (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) throw new DomainError("Das Auszugsdatum ist ungültig.");
+  if (to && !isValidIsoDate(to)) throw new DomainError("Das Auszugsdatum ist ungültig.");
   if (to && to < input.from) throw new DomainError("Das Auszugsdatum liegt vor dem Einzugsdatum.");
 
   const persons = Number.parseInt(input.persons, 10);
@@ -231,6 +258,10 @@ export function addTenancy(input: {
     to,
     persons,
     prepaymentCents,
+    prepaymentMode: input.prepaymentMode ?? "kalendermonate",
+    tenantStreet: input.tenantStreet?.trim() ?? "",
+    tenantZip: input.tenantZip?.trim() ?? "",
+    tenantCity: input.tenantCity?.trim() ?? "",
   };
 
   const overlaps = current.tenancies.some((existing) => {
@@ -259,6 +290,7 @@ export function addCost(input: { propertyId: string; year: number; category: str
         category: input.category,
         amountCents,
         key: input.key,
+        directTenancyId: null,
         receipts: [],
       },
     ],

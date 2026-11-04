@@ -20,8 +20,8 @@ export const fieldInput =
 export const fieldText =
   "min-h-11 w-full border border-ink/40 bg-paper px-3 font-sans text-base text-ink placeholder:text-ink-muted/70 focus-visible:border-ink";
 
-export function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`receipt px-5 py-7 sm:px-8 sm:py-8 ${className}`}>{children}</section>;
+export function Panel({ children, className = "", id }: { children: ReactNode; className?: string; id?: string }) {
+  return <section id={id} className={`receipt scroll-mt-8 px-5 py-7 sm:px-8 sm:py-8 ${className}`}>{children}</section>;
 }
 
 export function SectionHeading({ children, note }: { children: ReactNode; note?: string }) {

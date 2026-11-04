@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { hasExpectedFileSignature } from "@/lib/file-signature";
 import { createClient } from "@/lib/supabase/server";
 
 type RouteContext = { params: Promise<{ propertyId: string; year: string }> };
@@ -94,6 +95,9 @@ export async function POST(request: Request, context: RouteContext) {
   if (value.size > maxFileSize) {
     return NextResponse.json({ detail: "Das PDF darf höchstens 10 MB groß sein." }, { status: 400 });
   }
+  if (!(await hasExpectedFileSignature(value, "application/pdf"))) {
+    return NextResponse.json({ detail: "Der Dateiinhalt ist kein gültiges PDF." }, { status: 400 });
+  }
 
   const path = `${user.id}/${propertyId}/${year}/${crypto.randomUUID()}-Abrechnung-${year}.pdf`;
   const { error: uploadError } = await supabase.storage.from("statements").upload(path, value, {
@@ -106,12 +110,14 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ detail: "Das PDF konnte nicht hochgeladen werden." }, { status: 502 });
   }
 
-  const { error: updateError } = await supabase
+  const { data: updatedStatement, error: updateError } = await supabase
     .from("statements")
     .update({ pdf_path: path })
-    .eq("id", statement.id);
+    .eq("id", statement.id)
+    .select("pdf_path")
+    .maybeSingle();
 
-  if (updateError) {
+  if (updateError || updatedStatement?.pdf_path !== path) {
     await supabase.storage.from("statements").remove([path]);
     console.error("PDF-Pfad konnte nicht an der Abrechnung gespeichert werden.", updateError);
     return NextResponse.json({ detail: "Das PDF konnte nicht verknüpft werden." }, { status: 502 });

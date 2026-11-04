@@ -1,5 +1,5 @@
 import { formatEur, formatM2 } from "@/lib/allocation";
-import type { AppState, CostItem, KeyType, Tenancy, Unit } from "./types";
+import type { AppState, CostItem, Tenancy, Unit } from "./types";
 import { KEY_LABELS } from "./types";
 
 // Rules from docs/PRD.md section 5. Pure functions only, so the same arithmetic
@@ -49,6 +49,26 @@ function roundHalfUp(num: bigint, den: bigint): bigint {
   return (BigInt(2) * num + den) / (BigInt(2) * den);
 }
 
+/** Calculates the recorded monthly prepayment using the tenancy's explicit rule. */
+export function prepaymentCentsForYear(tenancy: Tenancy, year: number): number {
+  if (tenancy.prepaymentMode !== "taggenau") return tenancy.prepaymentCents * activeMonths(tenancy, year);
+  const range = activeRange(tenancy, year);
+  if (!range) return 0;
+
+  let total = BigInt(0);
+  for (let month = 0; month < 12; month++) {
+    const monthStart = Date.UTC(year, month, 1);
+    const monthEnd = Date.UTC(year, month + 1, 0);
+    const start = Math.max(range.start, monthStart);
+    const end = Math.min(range.end, monthEnd);
+    if (end < start) continue;
+    const coveredDays = Math.round((end - start) / DAY_MS) + 1;
+    const monthDays = Math.round((monthEnd - monthStart) / DAY_MS) + 1;
+    total += roundHalfUp(BigInt(tenancy.prepaymentCents) * BigInt(coveredDays), BigInt(monthDays));
+  }
+  return Number(total);
+}
+
 export type TenancyShare = {
   tenancyId: string;
   cents: number;
@@ -80,13 +100,16 @@ export type YearSettlement = {
   tenancies: TenancyResult[];
   totalCostCents: number;
   totalVacancyCents: number;
+  warnings: string[];
 };
 
-const RULES: Record<KeyType, string> = {
+const RULES: Record<string, string> = {
   flaeche: "Kosten × Wohnfläche ÷ Gesamtfläche × Zeitanteil",
   personen: "Kosten × Personen-Tage ÷ Summe aller Personen-Tage",
   einheiten: "Kosten ÷ Anzahl Einheiten × Zeitanteil",
 };
+
+RULES.direkt = "Externer Einzelbetrag wird dem Mietverhältnis 1:1 zugeordnet";
 
 export function settleYear(state: AppState, propertyId: string, year: number): YearSettlement {
   const units = state.units.filter((unit) => unit.propertyId === propertyId);
@@ -100,9 +123,31 @@ export function settleYear(state: AppState, propertyId: string, year: number): Y
     .map((tenancy) => ({ tenancy, days: activeDays(tenancy, year) }))
     .filter((entry) => entry.days > 0);
   const personDays = active.reduce((sum, entry) => sum + entry.tenancy.persons * entry.days, 0);
+  const hasCoverageGap = units.some((unit) => {
+    const occupiedDays = tenancies
+      .filter((tenancy) => tenancy.unitId === unit.id)
+      .reduce((sum, tenancy) => sum + activeDays(tenancy, year), 0);
+    return occupiedDays < days;
+  });
 
   const costSettlements: CostSettlement[] = costs.map((cost) => {
     const costCents = BigInt(cost.amountCents);
+    if (cost.key === "direkt") {
+      const target = active.find((entry) => entry.tenancy.id === cost.directTenancyId);
+      if (!target) throw new Error("Der Direktbetrag ist keinem aktiven Mietverhältnis zugeordnet.");
+      const shares = [{
+        tenancyId: target.tenancy.id,
+        cents: cost.amountCents,
+        formula: `${formatEur(cost.amountCents)} × 1 = ${formatEur(cost.amountCents)}`,
+      }];
+      return {
+        cost,
+        shares,
+        allocatedCents: cost.amountCents,
+        vacancyCents: 0,
+        rule: `${KEY_LABELS[cost.key]}: ${RULES[cost.key]}`,
+      };
+    }
     const shares: TenancyShare[] = active.map(({ tenancy, days: tenancyDays }) => {
       const unit = unitById.get(tenancy.unitId)!;
       let num: bigint;
@@ -143,7 +188,7 @@ export function settleYear(state: AppState, propertyId: string, year: number): Y
       0,
     );
     const months = activeMonths(tenancy, year);
-    const prepaidCents = tenancy.prepaymentCents * months;
+    const prepaidCents = prepaymentCentsForYear(tenancy, year);
     return {
       tenancy,
       unit: unitById.get(tenancy.unitId)!,
@@ -162,6 +207,9 @@ export function settleYear(state: AppState, propertyId: string, year: number): Y
     tenancies: tenancyResults,
     totalCostCents: costs.reduce((sum, cost) => sum + cost.amountCents, 0),
     totalVacancyCents: costSettlements.reduce((sum, settlement) => sum + settlement.vacancyCents, 0),
+    warnings: costs.some((cost) => cost.key === "personen") && hasCoverageGap
+      ? ["Beim Personenschlüssel werden Leerstandszeiten nicht automatisch als Vermieteranteil bewertet. Bitte fachlich prüfen."]
+      : [],
   };
 }
 

@@ -8,12 +8,12 @@ import {
   upsertFinalized,
   replaceProperties,
   replaceUnitsForProperty,
-  resetDemo,
   useAppState,
 } from "@/lib/domain/store";
 import { settlementYear } from "@/lib/domain/settlement";
 import type { AppState, KeyType } from "@/lib/domain/types";
-import { buttonPrimary, buttonQuiet, buttonSecondary, EmptyState, Panel, Pill, SectionHeading } from "../../_components/ui";
+import { buttonPrimary, buttonSecondary, EmptyState, Panel, Pill, SectionHeading } from "../../_components/ui";
+import { BetaFeedback } from "./beta-feedback";
 
 const DAY_MS = 86_400_000;
 
@@ -49,7 +49,6 @@ export function Dashboard() {
   const [propertiesLoaded, setPropertiesLoaded] = useState(false);
   const [relatedDataLoaded, setRelatedDataLoaded] = useState(false);
   const now = useNow();
-  const [confirmReset, setConfirmReset] = useState(false);
   const year = settlementYear();
   const deadline = Date.UTC(year + 1, 11, 31);
   const daysLeft = now === null ? null : Math.ceil((deadline - now) / DAY_MS);
@@ -79,6 +78,11 @@ export function Dashboard() {
             street: typeof record.street === "string" ? record.street : "",
             zip: typeof record.zip === "string" ? record.zip : "",
             city: typeof record.city === "string" ? record.city : "",
+            landlordName: typeof record.landlord_name === "string" ? record.landlord_name : "",
+            landlordStreet: typeof record.landlord_street === "string" ? record.landlord_street : "",
+            landlordZip: typeof record.landlord_zip === "string" ? record.landlord_zip : "",
+            landlordCity: typeof record.landlord_city === "string" ? record.landlord_city : "",
+            landlordEmail: typeof record.landlord_email === "string" ? record.landlord_email : "",
           }];
         });
 
@@ -155,7 +159,7 @@ export function Dashboard() {
                 typeof record.category !== "string" ||
                 !Number.isFinite(amountEur) ||
                 !Number.isInteger(year) ||
-                (key !== "flaeche" && key !== "personen" && key !== "einheiten")
+                (key !== "flaeche" && key !== "personen" && key !== "einheiten" && key !== "direkt")
               ) return [];
               return [{
                 id: record.id,
@@ -164,6 +168,7 @@ export function Dashboard() {
                 category: record.category,
                 amountCents: Math.round(amountEur * 100),
                 key: key as KeyType,
+                directTenancyId: typeof record.direct_tenancy_id === "string" ? record.direct_tenancy_id : null,
                 receipts: typeof record.receipt_path === "string" && record.receipt_path ? [record.receipt_path] : [],
               }];
             });
@@ -220,7 +225,10 @@ export function Dashboard() {
 
         {properties.length === 0 ? (
           <EmptyState title="Noch kein Objekt angelegt">
-            Lege ein Objekt mit Einheiten an. Danach erscheint die erste Formel-Karte, sobald eine Kostenposition erfasst ist.
+            <span className="block">Lege in einem Durchlauf ein Objekt, zwei Einheiten und eine Kostenposition an.</span>
+            <Link href="/app/schnellstart" className={`${buttonPrimary} mt-6`}>
+              Zur ersten Formel-Karte
+            </Link>
           </EmptyState>
         ) : (
           <ul className="divide-y divide-dashed divide-rule">
@@ -259,30 +267,8 @@ export function Dashboard() {
         )}
       </Panel>
 
-      <div className="flex flex-wrap items-center gap-6 text-sm text-ink-muted">
-        {confirmReset ? (
-          <>
-            <p className="font-semibold text-stamp-deep">Alle Daten in diesem Browser werden gelöscht.</p>
-            <button
-              type="button"
-              className={`${buttonQuiet} min-h-0 text-stamp-deep`}
-              onClick={() => {
-                resetDemo();
-                setConfirmReset(false);
-              }}
-            >
-              Ja, zurücksetzen
-            </button>
-            <button type="button" className={`${buttonQuiet} min-h-0`} onClick={() => setConfirmReset(false)}>
-              Abbrechen
-            </button>
-          </>
-        ) : (
-          <button type="button" className={`${buttonQuiet} min-h-0`} onClick={() => setConfirmReset(true)}>
-            Beispieldaten zurücksetzen
-          </button>
-        )}
-      </div>
+      <BetaFeedback />
+
     </div>
   );
 }

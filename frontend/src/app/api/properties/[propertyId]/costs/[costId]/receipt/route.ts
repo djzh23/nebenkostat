@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { hasExpectedFileSignature } from "@/lib/file-signature";
 import { createClient } from "@/lib/supabase/server";
 import { checkFinalizedStatement } from "@/lib/supabase/statement-lock";
 
@@ -108,6 +109,9 @@ export async function POST(request: Request, context: RouteContext) {
   }
   if (value.size > maxFileSize) {
     return NextResponse.json({ detail: "Die Belegdatei darf höchstens 10 MB groß sein." }, { status: 400 });
+  }
+  if (!(await hasExpectedFileSignature(value, value.type))) {
+    return NextResponse.json({ detail: "Der Dateiinhalt passt nicht zum angegebenen Dateityp." }, { status: 400 });
   }
 
   const fileName = safeFileName(value.name);

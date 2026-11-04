@@ -50,7 +50,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
   const { data: property, error: propertyError } = await supabase
     .from("properties")
-    .select("name, street, zip, city")
+    .select("name, street, zip, city, landlord_name, landlord_street, landlord_zip, landlord_city, landlord_email")
     .eq("id", propertyId)
     .maybeSingle();
   if (propertyError) {
@@ -79,12 +79,14 @@ export async function POST(_request: Request, context: RouteContext) {
     return NextResponse.json({ detail: "Das erzeugte PDF konnte nicht archiviert werden." }, { status: 502 });
   }
 
-  const { error: updateError } = await supabase
+  const { data: updatedStatement, error: updateError } = await supabase
     .from("statements")
     .update({ pdf_path: path })
     .eq("id", statement.id)
-    .is("pdf_path", null);
-  if (updateError) {
+    .is("pdf_path", null)
+    .select("pdf_path")
+    .maybeSingle();
+  if (updateError || updatedStatement?.pdf_path !== path) {
     await supabase.storage.from("statements").remove([path]);
     console.error("Automatisch erzeugtes PDF konnte nicht verknüpft werden.", updateError);
     return NextResponse.json({ detail: "Das erzeugte PDF konnte nicht archiviert werden." }, { status: 502 });

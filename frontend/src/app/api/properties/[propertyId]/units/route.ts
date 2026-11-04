@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { checkUnitCreationLimit } from "@/lib/supabase/entitlements";
 import { createClient } from "@/lib/supabase/server";
 import { checkFinalizedStatement } from "@/lib/supabase/statement-lock";
 
@@ -59,6 +60,24 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json(
       { detail: "Eine Abrechnung dieses Objekts ist abgeschlossen. Änderungen an Einheiten sind gesperrt." },
       { status: 409 },
+    );
+  }
+
+  const limit = await checkUnitCreationLimit(supabase);
+  if (limit.error) {
+    console.error("Einheitenlimit konnte nicht geprüft werden.", limit.error);
+    return NextResponse.json({ detail: "Das Nutzungslimit konnte nicht geprüft werden." }, { status: 502 });
+  }
+  if (!limit.allowed) {
+    return NextResponse.json(
+      {
+        detail: `Der kostenlose Beta-Start erlaubt insgesamt nur ${limit.limit} Wohneinheiten.`,
+        code: "beta_limit_reached",
+        limit: limit.limit,
+        current: limit.current,
+        upgradeUrl: limit.upgradeUrl,
+      },
+      { status: 403 },
     );
   }
 

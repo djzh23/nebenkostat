@@ -72,7 +72,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
   const { data: property, error: propertyError } = await supabase
     .from("properties")
-    .select("id, name, street, zip, city")
+    .select("id, name, street, zip, city, landlord_name, landlord_street, landlord_zip, landlord_city, landlord_email")
     .eq("id", propertyId)
     .maybeSingle();
   if (propertyError) {
@@ -99,7 +99,7 @@ export async function POST(_request: Request, context: RouteContext) {
   const unitIds = databaseUnits.map((unit) => unit.id);
   const { data: databaseTenancies, error: tenanciesError } = await supabase
     .from("tenancies")
-    .select("id, unit_id, tenant_name, persons, monthly_prepayment_eur, start_date, end_date")
+    .select("id, unit_id, tenant_name, persons, monthly_prepayment_eur, start_date, end_date, prepayment_mode, tenant_street, tenant_zip, tenant_city")
     .in("unit_id", unitIds)
     .order("start_date", { ascending: true });
   if (tenanciesError) {
@@ -109,7 +109,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
   const { data: databaseCosts, error: costsError } = await supabase
     .from("cost_items")
-    .select("id, property_id, billing_year, category, amount_eur, distribution_key, receipt_path")
+    .select("id, property_id, billing_year, category, amount_eur, distribution_key, direct_tenancy_id, receipt_path")
     .eq("property_id", propertyId)
     .eq("billing_year", year)
     .order("created_at", { ascending: true });
@@ -128,6 +128,11 @@ export async function POST(_request: Request, context: RouteContext) {
       street: property.street ?? "",
       zip: property.zip ?? "",
       city: property.city ?? "",
+      landlordName: property.landlord_name ?? "",
+      landlordStreet: property.landlord_street ?? "",
+      landlordZip: property.landlord_zip ?? "",
+      landlordCity: property.landlord_city ?? "",
+      landlordEmail: property.landlord_email ?? "",
     }],
     units: databaseUnits.map((unit) => ({
       id: unit.id,
@@ -143,6 +148,10 @@ export async function POST(_request: Request, context: RouteContext) {
       to: tenancy.end_date,
       persons: tenancy.persons,
       prepaymentCents: Math.round(Number(tenancy.monthly_prepayment_eur) * 100),
+      prepaymentMode: tenancy.prepayment_mode === "taggenau" ? "taggenau" : "kalendermonate",
+      tenantStreet: tenancy.tenant_street ?? "",
+      tenantZip: tenancy.tenant_zip ?? "",
+      tenantCity: tenancy.tenant_city ?? "",
     })),
     costs: databaseCosts.map((cost) => ({
       id: cost.id,
@@ -151,6 +160,7 @@ export async function POST(_request: Request, context: RouteContext) {
       category: cost.category,
       amountCents: Math.round(Number(cost.amount_eur) * 100),
       key: cost.distribution_key,
+      directTenancyId: cost.direct_tenancy_id,
       receipts: cost.receipt_path ? [cost.receipt_path] : [],
     })),
     finalized: [],
