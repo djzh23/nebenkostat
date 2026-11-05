@@ -105,7 +105,10 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
       <div className="space-y-8">
         <Link href={back} className={`${buttonQuiet} min-h-0 text-sm`}>Zurück zum Objekt</Link>
         <EmptyState title={`Keine Kosten für ${year}`}>
-          Erfasse zuerst Kostenpositionen. Die Abrechnung entsteht aus den Kosten und den Mietverhältnissen.
+          <div className="space-y-5">
+            <p>Erfasse zuerst Kostenpositionen. Die Abrechnung entsteht aus den Kosten und den Mietverhältnissen.</p>
+            <Link href={back} className={buttonPrimary}>Kosten jetzt anlegen</Link>
+          </div>
         </EmptyState>
       </div>
     );

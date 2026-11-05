@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { settlementYear } from "@/lib/domain/settlement";
-import { upsertProperty } from "@/lib/domain/store";
+import { upsertCost, upsertProperty, upsertUnit } from "@/lib/domain/store";
+import type { CostItem, KeyType, Unit } from "@/lib/domain/types";
 import { buttonPrimary, buttonQuiet, ErrorText, fieldInput, fieldLabel, fieldText, Panel, SectionHeading } from "../../_components/ui";
 
 type CreatedProperty = {
@@ -29,6 +30,54 @@ function isCreatedProperty(value: unknown): value is CreatedProperty {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object";
+}
+
+function parseUnit(value: unknown, propertyId: string): Unit | null {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.property_id !== "string" || value.property_id !== propertyId) {
+    return null;
+  }
+
+  const areaM2 = Number(value.area_m2);
+  if (typeof value.label !== "string" || !Number.isFinite(areaM2) || areaM2 <= 0) return null;
+
+  return {
+    id: value.id,
+    propertyId,
+    label: value.label,
+    areaHundredths: Math.round(areaM2 * 100),
+  };
+}
+
+function isKeyType(value: unknown): value is KeyType {
+  return value === "flaeche" || value === "personen" || value === "einheiten" || value === "direkt";
+}
+
+function parseCost(value: unknown, propertyId: string): CostItem | null {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== "string" ||
+    typeof value.property_id !== "string" ||
+    value.property_id !== propertyId ||
+    typeof value.category !== "string" ||
+    !isKeyType(value.distribution_key)
+  ) {
+    return null;
+  }
+
+  const year = Number(value.billing_year);
+  const amountEur = Number(value.amount_eur);
+  if (!Number.isInteger(year) || !Number.isFinite(amountEur) || amountEur <= 0) return null;
+
+  return {
+    id: value.id,
+    propertyId,
+    year,
+    category: value.category,
+    amountCents: Math.round(amountEur * 100),
+    key: value.distribution_key,
+    directTenancyId: typeof value.direct_tenancy_id === "string" ? value.direct_tenancy_id : null,
+    receipts: typeof value.receipt_path === "string" && value.receipt_path ? [value.receipt_path] : [],
+  };
 }
 
 async function postJson(path: string, payload: Record<string, unknown>): Promise<unknown> {
@@ -88,13 +137,17 @@ export function QuickstartForm() {
         label: String(form.get("unitOneLabel") ?? ""),
         areaM2: Number(form.get("unitOneArea")),
       });
-      if (!isRecord(unitOne) || typeof unitOne.id !== "string") throw new Error("Die erste Einheit konnte nicht bestätigt werden.");
+      const parsedUnitOne = parseUnit(unitOne, property.id);
+      if (!parsedUnitOne) throw new Error("Die erste Einheit konnte nicht bestätigt werden.");
+      upsertUnit(parsedUnitOne);
 
       const unitTwo = await postJson(`/api/properties/${property.id}/units`, {
         label: String(form.get("unitTwoLabel") ?? ""),
         areaM2: Number(form.get("unitTwoArea")),
       });
-      if (!isRecord(unitTwo) || typeof unitTwo.id !== "string") throw new Error("Die zweite Einheit konnte nicht bestätigt werden.");
+      const parsedUnitTwo = parseUnit(unitTwo, property.id);
+      if (!parsedUnitTwo) throw new Error("Die zweite Einheit konnte nicht bestätigt werden.");
+      upsertUnit(parsedUnitTwo);
 
       const cost = await postJson(`/api/properties/${property.id}/costs`, {
         billingYear: year,
@@ -102,7 +155,9 @@ export function QuickstartForm() {
         amountEur: Number(form.get("amountEur")),
         distributionKey: "flaeche",
       });
-      if (!isRecord(cost) || typeof cost.id !== "string") throw new Error("Die Kostenposition konnte nicht bestätigt werden.");
+      const parsedCost = parseCost(cost, property.id);
+      if (!parsedCost) throw new Error("Die Kostenposition konnte nicht bestätigt werden.");
+      upsertCost(parsedCost);
 
       router.push(`/app/objekte/${property.id}/${year}/abrechnung`);
     } catch (caught) {

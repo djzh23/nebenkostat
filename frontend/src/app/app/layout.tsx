@@ -18,7 +18,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const email = typeof data.claims.email === "string" ? data.claims.email : null;
 
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <header data-no-print className="border-b border-ink/20 bg-desk">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-4 md:px-8">
           <div className="flex items-baseline gap-6">
@@ -43,7 +43,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      <div className="mx-auto w-full max-w-6xl px-4 py-10 md:px-8 md:py-14">{children}</div>
+      <main className="flex-1">
+        <div className="mx-auto w-full max-w-6xl px-4 py-10 md:px-8 md:py-14">{children}</div>
+      </main>
       <footer data-no-print className="border-t border-ink/20 bg-desk">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-6 md:px-8">
           <div className="text-sm text-ink-muted">Nebenkostat Beta</div>
