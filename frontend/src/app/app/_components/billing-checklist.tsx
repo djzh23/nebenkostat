@@ -10,7 +10,7 @@ export function BillingChecklist({ state, propertyId, year }: { state: AppState;
 
   return (
     <Panel>
-      <SectionHeading note={complete ? "Alles geprüft" : `${checklist.openCount} Punkte vor dem Abschluss prüfen`}>
+      <SectionHeading note={complete ? "Alles geprüft" : `${checklist.openCount} Punkte vor dem Versand prüfen`}>
         Prüfliste vor dem Versand
       </SectionHeading>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -36,7 +36,7 @@ export function BillingChecklist({ state, propertyId, year }: { state: AppState;
       </div>
       {!complete ? (
         <p className="mt-5 text-sm text-ink-muted">
-          Hinweise blockieren den Export nicht. Bitte bestätige vor dem Abschluss, dass du Adressen, Mietzeiträume, Vorauszahlungen, Belege und fachliche Hinweise geprüft hast.
+          Hinweise blockieren den Export nicht. Bitte prüfe sie vor der Weitergabe der Abrechnung.
         </p>
       ) : null}
     </Panel>
