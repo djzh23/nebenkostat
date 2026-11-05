@@ -23,20 +23,22 @@ describe("billing checklist", () => {
   it("finds missing receipts, uncovered periods, and missing prepayments", () => {
     const checklist = buildBillingChecklist(state, "p", 2025);
 
-    expect(checklist.openCount).toBe(3);
+    expect(checklist.openCount).toBe(4);
     expect(checklist.groups.find((group) => group.id === "receipts")?.details).toEqual(["Müll · 600,00\u00a0€"]);
     expect(checklist.groups.find((group) => group.id === "periods")?.details).toEqual(["OG: 01.01.2025 bis 31.03.2025 nicht belegt"]);
     expect(checklist.groups.find((group) => group.id === "prepayments")?.details).toEqual(["OG · Schmidt"]);
+    expect(checklist.groups.find((group) => group.id === "quality")?.status).toBe("attention");
   });
 
-  it("is clear when every required check is complete", () => {
+  it("keeps the manual quality confirmation visible when data checks are complete", () => {
     const complete = {
       ...state,
-      tenancies: state.tenancies.map((tenancy) => ({ ...tenancy, from: "2025-01-01", prepaymentCents: 10000 })),
+      properties: [{ ...state.properties[0], street: "Hausweg 1", zip: "10115", city: "Berlin", landlordName: "Vermieter", landlordStreet: "Vermieterweg 2", landlordZip: "10115", landlordCity: "Berlin" }],
+      tenancies: state.tenancies.map((tenancy) => ({ ...tenancy, from: "2025-01-01", prepaymentCents: 10000, tenantStreet: "Mieterweg 3", tenantZip: "10115", tenantCity: "Berlin" })),
       costs: state.costs.map((cost) => ({ ...cost, receipts: ["beleg.pdf"] })),
     };
 
-    expect(buildBillingChecklist(complete, "p", 2025).openCount).toBe(0);
+    expect(buildBillingChecklist(complete, "p", 2025).openCount).toBe(1);
   });
 
   it("shows the calendar-month rule for partial move-in periods", () => {

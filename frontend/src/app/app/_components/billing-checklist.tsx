@@ -13,7 +13,7 @@ export function BillingChecklist({ state, propertyId, year }: { state: AppState;
       <SectionHeading note={complete ? "Alles geprüft" : `${checklist.openCount} Punkte vor dem Abschluss prüfen`}>
         Prüfliste vor dem Versand
       </SectionHeading>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {checklist.groups.map((group) => (
           <section key={group.id} className="border border-rule p-4" aria-labelledby={`check-${group.id}`}>
             <div className="flex items-start justify-between gap-3">
@@ -36,7 +36,7 @@ export function BillingChecklist({ state, propertyId, year }: { state: AppState;
       </div>
       {!complete ? (
         <p className="mt-5 text-sm text-ink-muted">
-          Hinweise blockieren den Export nicht. Bitte bestätige vor dem Abschluss, dass du die offenen Punkte geprüft hast.
+          Hinweise blockieren den Export nicht. Bitte bestätige vor dem Abschluss, dass du Adressen, Mietzeiträume, Vorauszahlungen, Belege und fachliche Hinweise geprüft hast.
         </p>
       ) : null}
     </Panel>
@@ -53,7 +53,7 @@ export function ChecklistAcknowledgement({ checked, onChange, disabled }: { chec
         disabled={disabled}
         className="mt-1 h-4 w-4 accent-stamp"
       />
-      <span>Ich habe die offenen Hinweise geprüft und bestätige, dass Mietzeiträume, Vorauszahlungen und Belege für diese Abrechnung korrekt sind.</span>
+      <span>Ich habe die offenen Hinweise geprüft und bestätige, dass Adressen, Mietzeiträume, Vorauszahlungen, Belege und fachliche Punkte für diese Abrechnung geprüft sind.</span>
     </label>
   );
 }

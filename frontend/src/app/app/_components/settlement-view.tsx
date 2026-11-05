@@ -186,6 +186,15 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
     }
   }
 
+  async function onOpenOrPrintStatement() {
+    if (!finalized) {
+      window.print();
+      return;
+    }
+    if (!pdfUploaded && !(await generatePdf())) return;
+    await onOpenPdf();
+  }
+
   async function onDownloadTenantPdf(tenancyId: string, unitLabel: string) {
     setTenantPdfId(tenancyId);
     setTenantPdfError(null);
@@ -224,8 +233,8 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
         </div>
         <div className="flex flex-wrap items-center gap-4" data-no-print>
           {finalized ? <Pill tone="done">Abgeschlossen</Pill> : <Pill tone="neutral">Entwurf</Pill>}
-          <button type="button" onClick={() => window.print()} className={buttonSecondary}>
-            Als PDF drucken
+          <button type="button" onClick={() => void onOpenOrPrintStatement()} className={buttonSecondary} disabled={pdfGenerating || openingPdf}>
+            {finalized ? "Archiviertes PDF öffnen" : "Druckansicht öffnen"}
           </button>
         </div>
       </div>

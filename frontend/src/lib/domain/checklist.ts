@@ -1,7 +1,7 @@
 import { formatEur } from "@/lib/allocation";
 import type { AppState } from "./types";
 
-export type ChecklistGroupId = "receipts" | "periods" | "prepayments";
+export type ChecklistGroupId = "receipts" | "periods" | "prepayments" | "quality";
 export type ChecklistStatus = "ok" | "attention";
 
 export type BillingChecklistGroup = {
@@ -70,6 +70,7 @@ function uncoveredPeriods(state: AppState, propertyId: string, year: number): st
 }
 
 export function buildBillingChecklist(state: AppState, propertyId: string, year: number): BillingChecklist {
+  const property = state.properties.find((candidate) => candidate.id === propertyId);
   const units = state.units.filter((unit) => unit.propertyId === propertyId);
   const costs = state.costs.filter((cost) => cost.propertyId === propertyId && cost.year === year);
   const unitLabel = new Map(units.map((unit) => [unit.id, unit.label]));
@@ -96,6 +97,25 @@ export function buildBillingChecklist(state: AppState, propertyId: string, year:
       return start.getUTCDate() !== 1 || end.getUTCDate() !== lastDayOfEndMonth;
     })
     .map((tenancy) => `${unitLabel.get(tenancy.unitId) ?? "Einheit"} · ${tenancy.tenant}: Teilmonat wird als voller Kalendermonat berücksichtigt.`);
+  const qualityDetails: string[] = [
+    "Mietvertrag und Umlagefähigkeit jeder Kostenposition manuell prüfen.",
+  ];
+  if (!property || [property.street, property.zip, property.city].some((value) => !value.trim())) {
+    qualityDetails.push("Objektadresse ist unvollständig und muss vor dem Versand ergänzt werden.");
+  }
+  if (!property || [property.landlordName, property.landlordStreet, property.landlordZip, property.landlordCity].some((value) => !value.trim())) {
+    qualityDetails.push("Absenderangaben des Vermieters sind unvollständig und müssen vor dem Versand ergänzt werden.");
+  }
+  const missingTenantAddresses = activeTenancies.filter((tenancy) => [tenancy.tenantStreet, tenancy.tenantZip, tenancy.tenantCity].some((value) => !value.trim()));
+  if (missingTenantAddresses.length > 0) {
+    qualityDetails.push(`${missingTenantAddresses.length} Mietpartei${missingTenantAddresses.length === 1 ? " hat" : "en haben"} keine vollständige Empfängeradresse.`);
+  }
+  if (costs.some((cost) => cost.category === "Heizung" || cost.category === "Warmwasser")) {
+    qualityDetails.push("Heiz- und Warmwasserkosten nur mit passender Verbrauchs- oder externer Einzelabrechnung übernehmen.");
+  }
+  if (costs.some((cost) => cost.key === "direkt")) {
+    qualityDetails.push("Externe Einzelbeträge mit der Originalabrechnung und der richtigen Mietpartei abgleichen.");
+  }
 
   const groups: BillingChecklistGroup[] = [
     {
@@ -138,6 +158,13 @@ export function buildBillingChecklist(state: AppState, propertyId: string, year:
         ...missingPrepayments.map((tenancy) => `${unitLabel.get(tenancy.unitId) ?? "Einheit"} · ${tenancy.tenant}`),
         ...partialCalendarPrepayments,
       ],
+    },
+    {
+      id: "quality",
+      label: "Fachliche Prüfung",
+      status: "attention",
+      summary: "Vor dem Versand müssen Adressen, Mietvertrag und Umlagefähigkeit manuell geprüft werden.",
+      details: qualityDetails,
     },
   ];
 

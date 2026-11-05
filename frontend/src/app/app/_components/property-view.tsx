@@ -962,6 +962,11 @@ function CostsPanel({
                 Hinweis: Nur umlagefähige Betriebskosten laut Mietvertrag und BetrKV eintragen. Reparatur-, Instandhaltungs- oder reine Verwaltungskosten gehören nicht in diese Abrechnung.
               </p>
             ) : null}
+            {selectedCategory === "Heizung" || selectedCategory === "Warmwasser" ? (
+              <p role="note" className="mt-2 text-xs leading-relaxed text-stamp-deep">
+                Diese App berechnet keine verbrauchsabhängige Heiz- oder Warmwasserabrechnung. Nur eine bereits geprüfte Verbrauchs- oder externe Einzelabrechnung übernehmen.
+              </p>
+            ) : null}
           </div>
           <div>
             <label htmlFor="cost-amount" className={fieldLabel}>Betrag in € (Jahr)</label>
@@ -984,6 +989,9 @@ function CostsPanel({
                   {tenancies.map((tenancy) => <option key={tenancy.id} value={tenancy.id}>{tenancy.tenant} · {tenancy.from} – {tenancy.to ?? "laufend"}</option>)}
                 </select>
               )}
+              <p role="note" className="mt-2 text-xs leading-relaxed text-stamp-deep">
+                Nur verwenden, wenn die externe Abrechnung diesen Einzelbetrag bereits eindeutig einer Mietpartei zuordnet.
+              </p>
             </div>
           ) : null}
           <div className="flex flex-wrap gap-3">
