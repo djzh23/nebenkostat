@@ -12,32 +12,44 @@ const workflow = [
   {
     number: "01",
     title: "Objekt anlegen",
-    body: "Lege das Gebäude für das Abrechnungsjahr an und trage die Objektadresse ein. Diese Angaben werden später im Archiv und in den Mietparteien-PDFs verwendet.",
+    body: "Gib dem Objekt einen Namen und trage die echte Adresse ein. Wähle das Abrechnungsjahr, für das du die Kosten sammeln möchtest.",
+    click: "Klicke oben auf „Objekt anlegen“ oder starte den „Schnellstart“.",
+    after: "Danach öffnet sich die Objektseite. Dort siehst du dein neues Objekt und die nächsten Eingabefelder.",
   },
   {
     number: "02",
     title: "Einheiten erfassen",
-    body: "Füge jede Wohnung mit einer eindeutigen Bezeichnung und der Wohnfläche hinzu. Die Gesamtfläche bildet die Grundlage für flächenbezogene Kosten.",
+    body: "Lege jede Wohnung einzeln an. Verwende eine klare Bezeichnung wie „Erdgeschoss links“ und trage die Wohnfläche in Quadratmetern ein.",
+    click: "Klicke im Bereich „Einheiten“ auf „Einheit hinzufügen“ und speichere jede Wohnung.",
+    after: "Die Wohnungen erscheinen als Liste. Die Gesamtfläche wird automatisch angezeigt.",
   },
   {
     number: "03",
     title: "Mietverhältnisse eintragen",
-    body: "Erfasse Mietpartei, Zeitraum, Personenzahl und Vorauszahlung. Mieterwechsel werden über die Zeiträume abgebildet; unbelegte Zeiträume bleiben als Leerstand sichtbar.",
+    body: "Trage pro Wohnung die Mietpartei, Beginn und Ende des Mietzeitraums, die Personenzahl und die monatliche Vorauszahlung ein.",
+    click: "Klicke im Bereich „Mietverhältnisse“ auf „Mietverhältnis hinzufügen“ und fülle die Felder aus.",
+    after: "Das Mietverhältnis erscheint unter der passenden Wohnung. Ein Mieterwechsel wird durch einen zweiten Zeitraum erfasst.",
   },
   {
     number: "04",
     title: "Kosten und Belege sammeln",
-    body: "Trage jede Kostenposition einmal mit Betrag, Verteilungsschlüssel und zugehörigem Beleg ein. Nutze nur Kosten, die laut Mietvertrag und eigener Prüfung umlagefähig sind.",
+    body: "Lege jede Rechnung als eigene Kostenposition an. Wähle Betrag und passenden Verteilungsschlüssel und lade den zugehörigen Beleg hoch.",
+    click: "Klicke im Bereich „Kosten und Belege“ auf „Kosten hinzufügen“ und danach auf „Kosten speichern“.",
+    after: "Die Kostenposition erscheint in der Liste. Fehlende Belege werden deutlich als offener Punkt markiert.",
   },
   {
     number: "05",
     title: "Rechenweg und Prüfliste kontrollieren",
-    body: "Die Formel-Karten zeigen, wie jeder Anteil entsteht. Die Prüfliste markiert fehlende Belege, Lücken, Vorauszahlungen, Adressen und fachliche Sonderfälle.",
+    body: "Öffne die Abrechnung und lies die Formel-Karten. Prüfe außerdem jeden Hinweis in der Prüfliste, auch wenn der Export nicht automatisch blockiert wird.",
+    click: "Klicke beim Objekt auf „Abrechnung“. Scrolle zu „Formel-Karten“ und zur „Prüfliste vor dem Versand“.",
+    after: "Du siehst für jede Kostenposition die Eingaben, den Rechenweg und den Anteil pro Mietpartei.",
   },
   {
     number: "06",
     title: "Abschließen und PDFs verwenden",
-    body: "Nach deiner Prüfung frierst du das Abrechnungsjahr ein. Danach bleibt die Berechnung unveränderlich, wird archiviert und kann als Gesamtübersicht oder als einzelne Mietparteien-PDF geöffnet werden.",
+    body: "Schließe die Abrechnung erst ab, wenn die Daten und offenen Hinweise geprüft sind. Danach bleibt dieses Abrechnungsjahr unveränderlich archiviert.",
+    click: "Klicke unten auf „Abrechnung abschließen“ und bestätige anschließend bewusst.",
+    after: "Danach öffnest du entweder das archivierte Gesamt-PDF oder beim jeweiligen Saldo das PDF für genau diese Mietpartei.",
   },
 ] as const;
 
@@ -46,14 +58,14 @@ const formulaExamples = [
     title: "Wohnfläche",
     rule: "Kosten × Fläche × Tage ÷ (Gesamtfläche × Jahrestage)",
     example: "1.200,00\u00a0€ × 60 m² × 90 Tage ÷ (100 m² × 365 Tage)",
-    result: "177,53\u00a0€ für Mieter A",
+    result: "177,53\u00a0€ für Anna Beispiel",
     note: "Der Nenner bleibt fest. Dadurch wird ein nicht belegter Zeitraum als Leerstand sichtbar.",
   },
   {
     title: "Personen",
     rule: "Kosten × Personen-Tage ÷ Summe aller Personen-Tage",
     example: "365,00\u00a0€ × 1 Person × 90 Tage ÷ 1.034 Personen-Tage",
-    result: "31,77\u00a0€ für Mieter A",
+    result: "31,77\u00a0€ für Anna Beispiel",
     note: "Personen-Tage entstehen aus Personenzahl × belegten Tagen. Leerstandszeiten werden nicht automatisch bewertet.",
   },
   {
@@ -78,7 +90,7 @@ function PreviewFrame({ label, children }: { label: string; children: ReactNode 
       <div className="receipt min-h-52 px-4 py-5 text-sm">
         <div className="mb-4 flex items-center justify-between border-b border-ink pb-2">
           <span className="font-sans font-bold">Nebenkostat</span>
-          <span className="font-mono text-[0.65rem] text-ink-muted">VORSCHAU</span>
+          <span className="font-mono text-[0.65rem] text-ink-muted">VORSCHAU · MUSTERDATEN</span>
         </div>
         {children}
       </div>
@@ -108,12 +120,34 @@ export default function HelpPage() {
       </Notice>
 
       <Panel>
+        <SectionHeading note="Du brauchst keine Vorkenntnisse">Die wichtigsten Schaltflächen</SectionHeading>
+        <div className="grid gap-x-10 gap-y-6 md:grid-cols-2">
+          <div>
+            <h3 className="font-sans text-lg font-bold">Hauptbutton</h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">Der rote Button speichert einen Schritt oder führt dich weiter. Lies den Text auf dem Button: „Kosten speichern“ speichert Kosten, „Abrechnung abschließen“ beendet das Abrechnungsjahr.</p>
+          </div>
+          <div>
+            <h3 className="font-sans text-lg font-bold">Unterstrichener Link</h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">Ein unterstrichener Text öffnet eine andere Ansicht oder führt zurück, zum Beispiel „Zur Übersicht“ oder „PDF laden“.</p>
+          </div>
+          <div>
+            <h3 className="font-sans text-lg font-bold">„Bearbeiten“</h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">Damit änderst du eine offene Einheit, ein Mietverhältnis oder eine Kostenposition. Nach dem Abschluss des Abrechnungsjahres sind diese Daten bewusst gesperrt.</p>
+          </div>
+          <div>
+            <h3 className="font-sans text-lg font-bold">„Prüfen“</h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">Ein roter Hinweis bedeutet: Bitte diesen Punkt lesen und selbst kontrollieren. Die App entscheidet nicht automatisch, ob eine Kostenposition fachlich passt.</p>
+          </div>
+        </div>
+      </Panel>
+
+      <Panel>
         <SectionHeading note="Drei Stationen, ein roter Faden">So sieht der Weg in der App aus</SectionHeading>
         <div className="grid gap-6 lg:grid-cols-3">
           <PreviewFrame label="1 · Schnellstart: Objekt, Einheiten und eine Kostenposition">
             <p className="font-sans text-lg font-bold">Deine erste Formel-Karte</p>
             <div className="mt-4 space-y-2 text-xs text-ink-muted">
-              <div className="border border-rule px-3 py-2">Objektname · Haus Lindenweg</div>
+              <div className="border border-rule px-3 py-2">Musterstraße 12 · 12345 Beispielstadt</div>
               <div className="border border-rule px-3 py-2">2 Einheiten · Wohnfläche</div>
               <div className="border border-rule px-3 py-2">Wasser · 1.200,00{"\u00a0"}€</div>
             </div>
@@ -133,9 +167,9 @@ export default function HelpPage() {
           <PreviewFrame label="3 · Ergebnis: Saldo und PDF-Ausgabe">
             <p className="font-sans text-lg font-bold">Saldo je Mietpartei</p>
             <div className="mt-4 space-y-3 text-xs">
-              <div className="flex justify-between border-b border-dashed border-rule pb-2"><span>Mieter A</span><span className="whitespace-nowrap font-mono">90,70{"\u00a0"}€ Guthaben</span></div>
-              <div className="flex justify-between border-b border-dashed border-rule pb-2"><span>Mieter B</span><span className="whitespace-nowrap font-mono">47,68{"\u00a0"}€ Nachzahlung</span></div>
-              <div className="flex justify-between"><span>Mieter C</span><span className="whitespace-nowrap font-mono">162,31{"\u00a0"}€ Guthaben</span></div>
+              <div className="flex justify-between border-b border-dashed border-rule pb-2"><span>Anna Beispiel</span><span className="whitespace-nowrap font-mono">90,70{"\u00a0"}€ Guthaben</span></div>
+              <div className="flex justify-between border-b border-dashed border-rule pb-2"><span>Bernd Muster</span><span className="whitespace-nowrap font-mono">47,68{"\u00a0"}€ Nachzahlung</span></div>
+              <div className="flex justify-between"><span>Clara Test</span><span className="whitespace-nowrap font-mono">162,31{"\u00a0"}€ Guthaben</span></div>
             </div>
             <p className="mt-5 font-semibold underline decoration-ink/40 underline-offset-4">Mieter-PDF laden</p>
           </PreviewFrame>
@@ -154,6 +188,10 @@ export default function HelpPage() {
               <div>
                 <h3 className="font-sans text-xl font-bold">{step.title}</h3>
                 <p className="mt-2 max-w-3xl text-base leading-relaxed text-ink-muted">{step.body}</p>
+                <div className="mt-4 grid gap-2 border-l-2 border-rule pl-4 text-sm leading-relaxed text-ink-muted sm:grid-cols-2 sm:gap-6">
+                  <p><span className="font-semibold text-ink">Du klickst:</span> {step.click}</p>
+                  <p><span className="font-semibold text-ink">Danach siehst du:</span> {step.after}</p>
+                </div>
               </div>
             </li>
           ))}
@@ -166,12 +204,12 @@ export default function HelpPage() {
           <div>
             <h3 className="font-sans text-xl font-bold">Beispieldaten</h3>
             <dl className="mt-5 divide-y divide-dashed divide-rule text-sm">
-              <div className="flex justify-between gap-4 py-3"><dt>Wasser</dt><dd className="whitespace-nowrap font-mono tabular-nums">1.200,00{"\u00a0"}€ · Wohnfläche</dd></div>
-              <div className="flex justify-between gap-4 py-3"><dt>Müll</dt><dd className="whitespace-nowrap font-mono tabular-nums">365,00{"\u00a0"}€ · Personen</dd></div>
-              <div className="flex justify-between gap-4 py-3"><dt>Heizung</dt><dd className="whitespace-nowrap font-mono tabular-nums">250,00{"\u00a0"}€ · direkt an B</dd></div>
+              <div className="flex justify-between gap-4 py-3"><dt>Wasser</dt><dd className="font-mono tabular-nums">1.200,00{"\u00a0"}€ · Wohnfläche</dd></div>
+              <div className="flex justify-between gap-4 py-3"><dt>Müll</dt><dd className="font-mono tabular-nums">365,00{"\u00a0"}€ · Personen</dd></div>
+              <div className="flex justify-between gap-4 py-3"><dt>Heizung</dt><dd className="font-mono tabular-nums">250,00{"\u00a0"}€ · direkt an Bernd Muster</dd></div>
               <div className="flex justify-between gap-4 py-3"><dt>Einheiten</dt><dd className="font-mono tabular-nums">60 m² + 40 m²</dd></div>
               <div className="flex justify-between gap-4 py-3"><dt>Personen-Tage</dt><dd className="font-mono tabular-nums">1.034 insgesamt</dd></div>
-              <div className="flex justify-between gap-4 py-3"><dt>Vorauszahlungen</dt><dd className="whitespace-nowrap font-mono tabular-nums">A 300 · B 700 · C 900{"\u00a0"}€</dd></div>
+              <div className="flex justify-between gap-4 py-3"><dt>Vorauszahlungen</dt><dd className="font-mono tabular-nums">Anna: 300{"\u00a0"}€ · Bernd: 700{"\u00a0"}€ · Clara: 900{"\u00a0"}€</dd></div>
             </dl>
           </div>
           <div className="border-l-2 border-stamp pl-5">
@@ -179,7 +217,7 @@ export default function HelpPage() {
               Wasser: 1.200,00{"\u00a0"}€ × 60 m² × 90 Tage ÷ (100 m² × 365 Tage) = 177,53{"\u00a0"}€
             </p>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-ink-muted">
-              Für Mieter A kommen 31,77{"\u00a0"}€ Müll und 177,53{"\u00a0"}€ Wasser zusammen. Die Kosten betragen 209,30{"\u00a0"}€. Davon werden 300,00{"\u00a0"}€ Vorauszahlungen abgezogen:
+              Für Anna Beispiel kommen 31,77{"\u00a0"}€ Müll und 177,53{"\u00a0"}€ Wasser zusammen. Die Kosten betragen 209,30{"\u00a0"}€. Davon werden 300,00{"\u00a0"}€ Vorauszahlungen abgezogen:
             </p>
             <p className="mt-4 font-mono text-2xl font-semibold tabular-nums">209,30{"\u00a0"}€ − 300,00{"\u00a0"}€ = −90,70{"\u00a0"}€</p>
             <p className="mt-3 font-semibold text-stamp-deep">Ergebnis: 90,70{"\u00a0"}€ Guthaben</p>
@@ -197,9 +235,9 @@ export default function HelpPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-dashed divide-rule">
-              <tr><th scope="row" className="py-3 pr-4 text-left font-semibold">Mieter A</th><td className="whitespace-nowrap py-3 pr-4 font-mono">209,30{"\u00a0"}€</td><td className="whitespace-nowrap py-3 pr-4 font-mono">300,00{"\u00a0"}€</td><td className="whitespace-nowrap py-3 text-right font-mono">90,70{"\u00a0"}€ Guthaben</td></tr>
-              <tr><th scope="row" className="py-3 pr-4 text-left font-semibold">Mieter B</th><td className="whitespace-nowrap py-3 pr-4 font-mono">747,68{"\u00a0"}€</td><td className="whitespace-nowrap py-3 pr-4 font-mono">700,00{"\u00a0"}€</td><td className="whitespace-nowrap py-3 text-right font-mono">47,68{"\u00a0"}€ Nachzahlung</td></tr>
-              <tr><th scope="row" className="py-3 pr-4 text-left font-semibold">Mieter C</th><td className="whitespace-nowrap py-3 pr-4 font-mono">737,69{"\u00a0"}€</td><td className="whitespace-nowrap py-3 pr-4 font-mono">900,00{"\u00a0"}€</td><td className="whitespace-nowrap py-3 text-right font-mono">162,31{"\u00a0"}€ Guthaben</td></tr>
+              <tr><th scope="row" className="py-3 pr-4 text-left font-semibold">Anna Beispiel</th><td className="whitespace-nowrap py-3 pr-4 font-mono">209,30{"\u00a0"}€</td><td className="whitespace-nowrap py-3 pr-4 font-mono">300,00{"\u00a0"}€</td><td className="whitespace-nowrap py-3 text-right font-mono">90,70{"\u00a0"}€ Guthaben</td></tr>
+              <tr><th scope="row" className="py-3 pr-4 text-left font-semibold">Bernd Muster</th><td className="whitespace-nowrap py-3 pr-4 font-mono">747,68{"\u00a0"}€</td><td className="whitespace-nowrap py-3 pr-4 font-mono">700,00{"\u00a0"}€</td><td className="whitespace-nowrap py-3 text-right font-mono">47,68{"\u00a0"}€ Nachzahlung</td></tr>
+              <tr><th scope="row" className="py-3 pr-4 text-left font-semibold">Clara Test</th><td className="whitespace-nowrap py-3 pr-4 font-mono">737,69{"\u00a0"}€</td><td className="whitespace-nowrap py-3 pr-4 font-mono">900,00{"\u00a0"}€</td><td className="whitespace-nowrap py-3 text-right font-mono">162,31{"\u00a0"}€ Guthaben</td></tr>
             </tbody>
           </table>
         </div>
@@ -291,6 +329,10 @@ export default function HelpPage() {
           </div>
         </div>
       </Panel>
+
+      <Notice>
+        Musterhinweis: Alle Namen, Adressen und Zahlen auf dieser Hilfe-Seite sind frei erfundene Beispiele. „Anna Beispiel“, „Bernd Muster“, „Clara Test“, „Musterstraße 12“ und „12345 Beispielstadt“ sind keine echten Personen oder Adressen. In deinem Objekt trägst du ausschließlich deine eigenen Daten ein.
+      </Notice>
 
       <div className="flex flex-wrap items-center gap-5">
         <Link href="/app" className={buttonPrimary}>Zur Übersicht</Link>
