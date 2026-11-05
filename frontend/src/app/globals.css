@@ -119,4 +119,51 @@ body {
   .receipt::after {
     display: none;
   }
+
+  .print-table-wrap {
+    overflow: visible !important;
+  }
+
+  .print-fit-table {
+    min-width: 0 !important;
+    table-layout: fixed;
+    font-size: 9pt;
+  }
+
+  .print-fit-table th,
+  .print-fit-table td {
+    padding-left: 3pt !important;
+    padding-right: 3pt !important;
+    overflow-wrap: anywhere;
+  }
+
+  .print-fit-table th:nth-child(1),
+  .print-fit-table td:nth-child(1) {
+    width: 14%;
+  }
+
+  .print-fit-table th:nth-child(2),
+  .print-fit-table td:nth-child(2) {
+    width: 26%;
+  }
+
+  .print-fit-table th:nth-child(3),
+  .print-fit-table td:nth-child(3) {
+    width: 9%;
+  }
+
+  .print-fit-table th:nth-child(4),
+  .print-fit-table td:nth-child(4) {
+    width: 14%;
+  }
+
+  .print-fit-table th:nth-child(5),
+  .print-fit-table td:nth-child(5) {
+    width: 17%;
+  }
+
+  .print-fit-table th:nth-child(6),
+  .print-fit-table td:nth-child(6) {
+    width: 20%;
+  }
 }

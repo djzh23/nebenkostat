@@ -32,7 +32,7 @@ const freeFeatures = [
 ];
 
 
-const disclaimer = "Erstellt mit Nebenkostat. Prüfung durch den Vermieter bzw. eine Fachberatung erforderlich.";
+const disclaimer = "Erstellt mit Nebenkostat · Angaben bitte vor dem Versand prüfen.";
 
 export default function Home() {
   return (

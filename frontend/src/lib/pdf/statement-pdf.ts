@@ -305,10 +305,16 @@ function drawSummaryBox(layout: PdfLayout, rows: Array<[string, string]>, emphas
   layout.y -= rowHeight + 12;
 }
 
+const PDF_FOOTER = "Erstellt mit Nebenkostat · Angaben bitte vor dem Versand prüfen.";
+
+function tenantFileName(year: number, tenancy: PdfTenancy): string {
+  return `Nebenkostenabrechnung-${year}-${safeFilePart(tenancy.unitLabel)}-${safeFilePart(tenancy.tenant)}.pdf`;
+}
+
 function drawFooter(layout: PdfLayout, year: number) {
   const pages = layout.document.getPages();
   pages.forEach((page, index) => {
-    page.drawText("Erstellt mit Nebenkostat · Prüfung durch den Vermieter bzw. eine Fachberatung erforderlich.", { x: layout.margin, y: 27, size: 7, font: layout.regular, color: layout.muted });
+    page.drawText(PDF_FOOTER, { x: layout.margin, y: 27, size: 7, font: layout.regular, color: layout.muted });
     const pageText = `Abrechnung ${year} · Seite ${index + 1} von ${pages.length}`;
     const width = layout.mono.widthOfTextAtSize(pageText, 7);
     page.drawText(pageText, { x: layout.pageWidth - layout.margin - width, y: 27, size: 7, font: layout.mono, color: layout.muted });
@@ -389,7 +395,7 @@ export async function createTenantStatementPdfLegacy(
 
   return {
     bytes: await layout.document.save(),
-    fileName: `Nebenkostenabrechnung-${result.year}-${safeFilePart(tenancy.unitLabel)}.pdf`,
+    fileName: tenantFileName(result.year, tenancy),
   };
 }
 
@@ -403,7 +409,6 @@ export async function createTenantStatementPdf(
   const { tenancy, costs } = tenantPdfData(result, tenancyId);
   const balanceText = tenancy.balanceCents > 0 ? "Nachzahlung" : tenancy.balanceCents < 0 ? "Guthaben" : "Ausgeglichen";
   drawDocumentIntro(layout, property, result.year, `Nebenkostenabrechnung ${result.year}`);
-  drawWarnings(layout, result.warnings);
   drawHeading(layout, "Für die Mietpartei");
   drawText(layout, `${tenancy.tenant} · ${tenancy.unitLabel}`, { font: layout.bold, size: 12, gap: 16 });
   const tenantAddress = [tenancy.tenantStreet, [tenancy.tenantZip, tenancy.tenantCity].filter(Boolean).join(" ")].filter(Boolean).join(", ");
@@ -431,7 +436,7 @@ export async function createTenantStatementPdf(
   drawRule(layout, layout.stamp);
   drawText(layout, "Die Berechnung zeigt die verwendeten Beträge und den Rechenweg. Bitte bewahre diese Abrechnung zusammen mit den zugehörigen Belegen auf.", { size: 8.5, color: layout.muted, gap: 12 });
   drawFooter(layout, result.year);
-  return { bytes: await layout.document.save(), fileName: `Nebenkostenabrechnung-${result.year}-${safeFilePart(tenancy.unitLabel)}.pdf` };
+  return { bytes: await layout.document.save(), fileName: tenantFileName(result.year, tenancy) };
 }
 
 export async function createStatementPdf(

@@ -47,7 +47,7 @@ describe("statement PDF", () => {
     const pdf = await createTenantStatementPdf(property, resultWithCosts(1), "2026-01-01T00:00:00.000Z", "t1");
     const document = await PDFDocument.load(pdf.bytes);
 
-    expect(pdf.fileName).toContain("Nebenkostenabrechnung-2025-EG.pdf");
+    expect(pdf.fileName).toContain("Nebenkostenabrechnung-2025-EG-Muster-Mieter.pdf");
     expect(document.getPages()).toHaveLength(1);
   });
 

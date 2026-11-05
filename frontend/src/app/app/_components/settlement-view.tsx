@@ -24,7 +24,11 @@ import {
 } from "../../_components/ui";
 
 const DISCLAIMER =
-  "Erstellt mit Nebenkostat. Prüfung durch den Vermieter bzw. eine Fachberatung erforderlich.";
+  "Erstellt mit Nebenkostat · Angaben bitte vor dem Versand prüfen.";
+
+function safeDownloadPart(value: string): string {
+  return value.normalize("NFKD").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "Mietpartei";
+}
 
 function balanceLabel(cents: number): { text: string; tone: "warn" | "ok" | "neutral" } {
   if (cents > 0) return { text: "Nachzahlung", tone: "warn" };
@@ -195,7 +199,8 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Nebenkostenabrechnung-${year}-${unitLabel.replace(/[^a-zA-Z0-9]+/g, "-")}.pdf`;
+      const tenant = result.tenancies.find((row) => row.tenancy.id === tenancyId)?.tenancy.tenant ?? "Mietpartei";
+      link.download = `Nebenkostenabrechnung-${year}-${safeDownloadPart(unitLabel)}-${safeDownloadPart(tenant)}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -211,7 +216,7 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
     <div className="space-y-10">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div className="min-w-0">
-          <Link href={back} className={`${buttonQuiet} min-h-0 text-sm`}>Zurück zum Objekt</Link>
+          <Link href={back} data-no-print className={`${buttonQuiet} min-h-0 text-sm`}>Zurück zum Objekt</Link>
           <h1 className="mt-4 font-sans text-[clamp(2.25rem,4vw,3.25rem)] font-black leading-none tracking-[-0.03em]">
             Abrechnung {year}
           </h1>
@@ -235,35 +240,37 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
       <BillingChecklist state={state} propertyId={propertyId} year={year} />
 
       {finalized ? (
-        <Panel>
-          <SectionHeading note="Privater Supabase-Storage">PDF-Archiv</SectionHeading>
-          {pdfUploaded ? (
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <p className="text-sm text-ink-muted">Das PDF ist privat archiviert. Der Öffnungslink ist 60 Sekunden gültig.</p>
-              <button type="button" onClick={() => void onOpenPdf()} disabled={openingPdf} className={buttonQuiet}>
-                {openingPdf ? "PDF wird geöffnet …" : "PDF öffnen"}
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-dashed border-rule pb-5">
-                <p className="max-w-xl text-sm text-ink-muted">PDF direkt aus dem eingefrorenen Abrechnungsergebnis erzeugen und archivieren.</p>
-                <button type="button" onClick={() => void generatePdf()} disabled={pdfGenerating} className={buttonQuiet}>
-                  {pdfGenerating ? "PDF wird erzeugt …" : "PDF erzeugen und archivieren"}
+        <div data-no-print>
+          <Panel>
+            <SectionHeading note="Privater Supabase-Storage">PDF-Archiv</SectionHeading>
+            {pdfUploaded ? (
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <p className="text-sm text-ink-muted">Das PDF ist privat archiviert. Der Öffnungslink ist 60 Sekunden gültig.</p>
+                <button type="button" onClick={() => void onOpenPdf()} disabled={openingPdf} className={buttonQuiet}>
+                  {openingPdf ? "PDF wird geöffnet …" : "PDF öffnen"}
                 </button>
               </div>
-              <form onSubmit={(event) => void onPdfUpload(event)} className="mt-5 flex flex-wrap items-end gap-4">
-                <div className="min-w-0 flex-1">
-                  <label htmlFor="statement-pdf" className={fieldLabel}>Oder vorhandenes PDF auswählen</label>
-                  <input id="statement-pdf" name="pdf" type="file" required accept="application/pdf,.pdf" className={fieldText} />
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-dashed border-rule pb-5">
+                  <p className="max-w-xl text-sm text-ink-muted">PDF direkt aus dem eingefrorenen Abrechnungsergebnis erzeugen und archivieren.</p>
+                  <button type="button" onClick={() => void generatePdf()} disabled={pdfGenerating} className={buttonQuiet}>
+                    {pdfGenerating ? "PDF wird erzeugt …" : "PDF erzeugen und archivieren"}
+                  </button>
                 </div>
-                <button type="submit" className={buttonQuiet}>PDF manuell archivieren</button>
-              </form>
-            </>
-          )}
-          {pdfError ? <div className="mt-4"><ErrorText>{pdfError}</ErrorText></div> : null}
-          {pdfDownloadError ? <div className="mt-4"><ErrorText>{pdfDownloadError}</ErrorText></div> : null}
-        </Panel>
+                <form onSubmit={(event) => void onPdfUpload(event)} className="mt-5 flex flex-wrap items-end gap-4">
+                  <div className="min-w-0 flex-1">
+                    <label htmlFor="statement-pdf" className={fieldLabel}>Oder vorhandenes PDF auswählen</label>
+                    <input id="statement-pdf" name="pdf" type="file" required accept="application/pdf,.pdf" className={fieldText} />
+                  </div>
+                  <button type="submit" className={buttonQuiet}>PDF manuell archivieren</button>
+                </form>
+              </>
+            )}
+            {pdfError ? <div className="mt-4"><ErrorText>{pdfError}</ErrorText></div> : null}
+            {pdfDownloadError ? <div className="mt-4"><ErrorText>{pdfDownloadError}</ErrorText></div> : null}
+          </Panel>
+        </div>
       ) : null}
 
       <Panel>
@@ -345,8 +352,8 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
 
       <Panel>
         <SectionHeading note="Kosten minus angerechnete Vorauszahlungen laut Mietvertrag">Saldo je Mietpartei</SectionHeading>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[40rem] text-left text-sm">
+        <div className="print-table-wrap overflow-x-auto">
+          <table className="print-fit-table w-full min-w-[40rem] text-left text-sm">
             <thead>
               <tr className="border-b border-ink font-mono text-xs uppercase tracking-wider text-ink-muted">
                 <th scope="col" className="py-2 pr-4 font-semibold">Einheit</th>
@@ -355,7 +362,7 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
                 <th scope="col" className="py-2 pr-4 text-right font-semibold">Kosten</th>
                 <th scope="col" className="py-2 pr-4 text-right font-semibold">Angerechnet</th>
                 <th scope="col" className="py-2 pr-4 text-right font-semibold">Saldo</th>
-                <th scope="col" className="py-2 text-right font-semibold">Versand</th>
+                <th scope="col" data-no-print className="py-2 text-right font-semibold">Versand</th>
               </tr>
             </thead>
             <tbody>
@@ -382,7 +389,7 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
                         <Pill tone={balance.tone}>{balance.text}</Pill>
                       </span>
                     </td>
-                    <td className="py-3 text-right">
+                    <td data-no-print className="py-3 text-right">
                       {finalized ? (
                         <button
                           type="button"
@@ -404,36 +411,38 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
 
       {tenantPdfError ? <ErrorText>{tenantPdfError}</ErrorText> : null}
 
-      <Panel>
-        <p className="border-l-2 border-ink pl-4 text-sm leading-relaxed">
-          Auf jeder PDF-Abrechnung steht: „{DISCLAIMER}“
-        </p>
-        {finalized ? null : (
-          <div className="mt-8 flex flex-wrap items-center gap-5" data-no-print>
-            {confirming ? (
-              <>
-                <p className="max-w-xl text-sm font-semibold text-stamp-deep">
-                  Nach dem Abschließen ist die Berechnung unveränderlich. Kosten, Einheiten und Mietverhältnisse für {year} sind dann gesperrt.
-                </p>
-                {checklist.openCount > 0 ? (
-                  <ChecklistAcknowledgement checked={checklistAcknowledged} onChange={setChecklistAcknowledged} />
-                ) : null}
-                <button type="button" onClick={onFinalize} className={buttonPrimary}>
-                  Jetzt abschließen
+      <div data-no-print>
+        <Panel>
+          <p className="border-l-2 border-ink pl-4 text-sm leading-relaxed">
+            Auf jeder PDF-Abrechnung steht: „{DISCLAIMER}“
+          </p>
+          {finalized ? null : (
+            <div className="mt-8 flex flex-wrap items-center gap-5" data-no-print>
+              {confirming ? (
+                <>
+                  <p className="max-w-xl text-sm font-semibold text-stamp-deep">
+                    Nach dem Abschließen ist die Berechnung unveränderlich. Kosten, Einheiten und Mietverhältnisse für {year} sind dann gesperrt.
+                  </p>
+                  {checklist.openCount > 0 ? (
+                    <ChecklistAcknowledgement checked={checklistAcknowledged} onChange={setChecklistAcknowledged} />
+                  ) : null}
+                  <button type="button" onClick={onFinalize} className={buttonPrimary}>
+                    Jetzt abschließen
+                  </button>
+                  <button type="button" onClick={() => setConfirming(false)} className={buttonQuiet}>
+                    Abbrechen
+                  </button>
+                </>
+              ) : (
+                <button type="button" onClick={() => setConfirming(true)} className={buttonPrimary}>
+                  Abrechnung abschließen
                 </button>
-                <button type="button" onClick={() => setConfirming(false)} className={buttonQuiet}>
-                  Abbrechen
-                </button>
-              </>
-            ) : (
-              <button type="button" onClick={() => setConfirming(true)} className={buttonPrimary}>
-                Abrechnung abschließen
-              </button>
-            )}
-            {error ? <ErrorText>{error}</ErrorText> : null}
-          </div>
-        )}
-      </Panel>
+              )}
+              {error ? <ErrorText>{error}</ErrorText> : null}
+            </div>
+          )}
+        </Panel>
+      </div>
     </div>
   );
 }
