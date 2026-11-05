@@ -198,7 +198,7 @@ export function QuickstartForm() {
                 Das Objekt wurde bereits angelegt. <Link className="font-semibold underline underline-offset-4" href={`/app/objekte/${createdPropertyId}/${year}`}>Zum Objekt</Link>
               </p>
             ) : null}
-            <button type="submit" disabled={pending} className={buttonPrimary}>
+            <button type="submit" disabled={pending} aria-busy={pending} className={buttonPrimary}>
               {pending ? "Formel-Karte wird vorbereitet …" : "Erste Formel-Karte anzeigen"}
             </button>
           </div>

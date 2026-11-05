@@ -126,8 +126,8 @@ export function PropertyForm() {
 
           <div className="space-y-4 sm:col-span-2">
             {error ? <ErrorText>{error}</ErrorText> : null}
-            <button type="submit" disabled={pending} className={buttonPrimary}>
-              Objekt anlegen
+            <button type="submit" disabled={pending} aria-busy={pending} className={buttonPrimary}>
+              {pending ? "Objekt wird angelegt …" : "Objekt anlegen"}
             </button>
           </div>
         </form>

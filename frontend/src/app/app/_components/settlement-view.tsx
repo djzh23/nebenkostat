@@ -49,6 +49,8 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
   const [tenantPdfId, setTenantPdfId] = useState<string | null>(null);
   const [tenantPdfError, setTenantPdfError] = useState<string | null>(null);
   const [checklistAcknowledged, setChecklistAcknowledged] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+  const [pdfUploading, setPdfUploading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,6 +116,8 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
       setError("Bitte bestätige zuerst, dass du die offenen Hinweise der Prüfliste geprüft hast.");
       return;
     }
+    setFinalizing(true);
+    setError(null);
     try {
       const response = await fetch(`/api/properties/${propertyId}/statements/${year}`, {
         method: "POST",
@@ -125,9 +129,10 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
       finalizeYear(propertyId, year);
       await generatePdf();
       setConfirming(false);
-      setError(null);
     } catch (caught) {
       setError(caught instanceof DomainError ? caught.message : "Die Abrechnung konnte nicht abgeschlossen werden.");
+    } finally {
+      setFinalizing(false);
     }
   }
 
@@ -155,18 +160,24 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
   async function onPdfUpload(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
-    const response = await fetch(`/api/properties/${propertyId}/statements/${year}/pdf`, {
-      method: "POST",
-      body: new FormData(form),
-    });
-    const payload = (await response.json().catch(() => null)) as Record<string, unknown> | null;
-    if (!response.ok) {
-      setPdfError(typeof payload?.detail === "string" ? payload.detail : "Das PDF konnte nicht archiviert werden.");
-      return;
-    }
-    setPdfUploaded(true);
+    setPdfUploading(true);
     setPdfError(null);
-    form.reset();
+    try {
+      const response = await fetch(`/api/properties/${propertyId}/statements/${year}/pdf`, {
+        method: "POST",
+        body: new FormData(form),
+      });
+      const payload = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+      if (!response.ok) {
+        throw new Error(typeof payload?.detail === "string" ? payload.detail : "Das PDF konnte nicht archiviert werden.");
+      }
+      setPdfUploaded(true);
+      form.reset();
+    } catch (caught) {
+      setPdfError(caught instanceof Error ? caught.message : "Das PDF konnte nicht archiviert werden.");
+    } finally {
+      setPdfUploading(false);
+    }
   }
 
   async function onOpenPdf() {
@@ -234,7 +245,7 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
         <div className="flex flex-wrap items-center gap-4" data-no-print>
           {finalized ? <Pill tone="done">Abgeschlossen</Pill> : <Pill tone="neutral">Entwurf</Pill>}
           <button type="button" onClick={() => void onOpenOrPrintStatement()} className={buttonSecondary} disabled={pdfGenerating || openingPdf}>
-            {finalized ? "Archiviertes PDF öffnen" : "Druckansicht öffnen"}
+            {pdfGenerating ? "PDF wird erzeugt …" : openingPdf ? "PDF wird geöffnet …" : finalized ? "Archiviertes PDF öffnen" : "Druckansicht öffnen"}
           </button>
         </div>
       </div>
@@ -272,7 +283,9 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
                     <label htmlFor="statement-pdf" className={fieldLabel}>Oder vorhandenes PDF auswählen</label>
                     <input id="statement-pdf" name="pdf" type="file" required accept="application/pdf,.pdf" className={fieldText} />
                   </div>
-                  <button type="submit" className={buttonQuiet}>PDF manuell archivieren</button>
+                  <button type="submit" disabled={pdfUploading} aria-busy={pdfUploading} className={buttonQuiet}>
+                    {pdfUploading ? "PDF wird archiviert …" : "PDF manuell archivieren"}
+                  </button>
                 </form>
               </>
             )}
@@ -435,10 +448,10 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
                   {checklist.openCount > 0 ? (
                     <ChecklistAcknowledgement checked={checklistAcknowledged} onChange={setChecklistAcknowledged} />
                   ) : null}
-                  <button type="button" onClick={onFinalize} className={buttonPrimary}>
-                    Jetzt abschließen
+                  <button type="button" onClick={onFinalize} disabled={finalizing} aria-busy={finalizing} className={buttonPrimary}>
+                    {finalizing ? "Abrechnung wird abgeschlossen …" : "Jetzt abschließen"}
                   </button>
-                  <button type="button" onClick={() => setConfirming(false)} className={buttonQuiet}>
+                  <button type="button" onClick={() => setConfirming(false)} disabled={finalizing} className={buttonQuiet}>
                     Abbrechen
                   </button>
                 </>

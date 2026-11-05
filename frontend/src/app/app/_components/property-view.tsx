@@ -267,13 +267,14 @@ export function PropertyView({ propertyId, year, otherYears }: { propertyId: str
 }
 
 function PropertyContactPanel({ property, locked }: { property: AppState["properties"][number]; locked: boolean }) {
-  const { error, runAsync } = useFormError();
+  const { error, pending, runAsync } = useFormError();
   const [saved, setSaved] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
+    setSaved(false);
     const ok = await runAsync(async () => {
       const response = await fetch(`/api/properties/${property.id}`, {
         method: "PATCH",
@@ -335,7 +336,9 @@ function PropertyContactPanel({ property, locked }: { property: AppState["proper
             <input id="landlord-email" name="landlordEmail" type="email" defaultValue={property.landlordEmail} className={fieldText} autoComplete="email" />
           </div>
           <div className="flex flex-wrap items-center gap-4 sm:col-span-2">
-            <button type="submit" className={buttonPrimary}>Vermieterangaben speichern</button>
+            <button type="submit" disabled={pending} aria-busy={pending} className={buttonPrimary}>
+              {pending ? "Vermieterangaben werden gespeichert …" : "Vermieterangaben speichern"}
+            </button>
             {saved ? <span className="text-sm text-ink-muted">Gespeichert.</span> : null}
             {error ? <ErrorText>{error}</ErrorText> : null}
           </div>
@@ -403,6 +406,7 @@ function PreviousYearCopyPanel({ propertyId, year, costs, costsLoaded }: { prope
 
 function useFormError() {
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   function run(action: () => void) {
     try {
       action();
@@ -414,6 +418,8 @@ function useFormError() {
     }
   }
   async function runAsync(action: () => Promise<void>) {
+    setPending(true);
+    setError(null);
     try {
       await action();
       setError(null);
@@ -421,9 +427,11 @@ function useFormError() {
     } catch (caught) {
       setError(caught instanceof DomainError || caught instanceof Error ? caught.message : "Das konnte nicht gespeichert werden.");
       return false;
+    } finally {
+      setPending(false);
     }
   }
-  return { error, run, runAsync };
+  return { error, pending, run, runAsync };
 }
 
 function UnitsPanel({
@@ -435,7 +443,8 @@ function UnitsPanel({
   units: AppState["units"];
   state: AppState;
 }) {
-  const { error, runAsync } = useFormError();
+  const { error, pending, runAsync } = useFormError();
+  const [saved, setSaved] = useState(false);
   const totalHundredths = units.reduce((sum, unit) => sum + unit.areaHundredths, 0);
   const finalizedAny = state.finalized.some((record) => record.propertyId === propertyId);
 
@@ -443,7 +452,8 @@ function UnitsPanel({
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
-    const saved = await runAsync(async () => {
+    setSaved(false);
+    const savedOk = await runAsync(async () => {
       const response = await fetch(`/api/properties/${propertyId}/units`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -491,7 +501,10 @@ function UnitsPanel({
         areaHundredths: Math.round(areaM2 * 100),
       });
     });
-    if (saved) form.reset();
+    if (savedOk) {
+      form.reset();
+      setSaved(true);
+    }
   }
 
   return (
@@ -522,7 +535,10 @@ function UnitsPanel({
             <label htmlFor="unit-area" className={fieldLabel}>Wohnfläche in m²</label>
             <input id="unit-area" name="area" required inputMode="decimal" placeholder="62,5" className={fieldInput} />
           </div>
-          <button type="submit" className={buttonPrimary}>Einheit hinzufügen</button>
+          <button type="submit" disabled={pending} aria-busy={pending} className={buttonPrimary}>
+            {pending ? "Einheit wird gespeichert …" : "Einheit hinzufügen"}
+          </button>
+          {saved ? <p role="status" className="text-sm text-ink-muted sm:col-span-3">Einheit gespeichert.</p> : null}
           {error ? <div className="sm:col-span-3"><ErrorText>{error}</ErrorText></div> : null}
         </form>
       )}
@@ -541,7 +557,8 @@ function TenanciesPanel({
   year: number;
   locked: boolean;
 }) {
-  const { error, runAsync } = useFormError();
+  const { error, pending, runAsync } = useFormError();
+  const [saved, setSaved] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const unitLabel = new Map(units.map((unit) => [unit.id, unit.label]));
   const editing = tenancies.find((tenancy) => tenancy.id === editingId) ?? null;
@@ -550,7 +567,8 @@ function TenanciesPanel({
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
-    const saved = await runAsync(async () => {
+    setSaved(false);
+    const savedOk = await runAsync(async () => {
       const propertyId = units[0]?.propertyId ?? "";
       const response = await fetch(editing ? `/api/properties/${propertyId}/tenancies/${editing.id}` : `/api/properties/${propertyId}/tenancies`, {
         method: editing ? "PATCH" : "POST",
@@ -597,9 +615,10 @@ function TenanciesPanel({
         tenantCity: typeof result.tenant_city === "string" ? result.tenant_city : "",
       });
     });
-    if (saved) {
+    if (savedOk) {
       form.reset();
       setEditingId(null);
+      setSaved(true);
     }
   }
 
@@ -690,9 +709,12 @@ function TenanciesPanel({
                 <input id="tenancy-city" name="tenantCity" defaultValue={editing?.tenantCity ?? ""} className={fieldText} />
               </div>
               <div className="sm:col-span-2 space-y-4">
+                {saved ? <p role="status" className="text-sm text-ink-muted">Mietverhältnis gespeichert.</p> : null}
                 {error ? <ErrorText>{error}</ErrorText> : null}
                 {editing ? <button type="button" className={buttonQuiet} onClick={() => setEditingId(null)}>Abbrechen</button> : null}
-                <button type="submit" className={buttonPrimary}>Mietverhältnis speichern</button>
+                <button type="submit" disabled={pending} aria-busy={pending} className={buttonPrimary}>
+                  {pending ? "Mietverhältnis wird gespeichert …" : "Mietverhältnis speichern"}
+                </button>
               </div>
             </form>
           )}
@@ -717,12 +739,16 @@ function CostsPanel({
   tenancies: AppState["tenancies"];
   locked: boolean;
 }) {
-  const { error, runAsync } = useFormError();
+  const { error, pending, runAsync } = useFormError();
+  const [saved, setSaved] = useState(false);
   const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [receiptSavedId, setReceiptSavedId] = useState<string | null>(null);
   const [openingReceiptId, setOpeningReceiptId] = useState<string | null>(null);
   const [receiptOpenError, setReceiptOpenError] = useState<string | null>(null);
   const [zipDownloading, setZipDownloading] = useState(false);
   const [zipError, setZipError] = useState<string | null>(null);
+  const [uploadingReceiptId, setUploadingReceiptId] = useState<string | null>(null);
+  const [deletingCostId, setDeletingCostId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<KeyType>("flaeche");
   const [selectedCategory, setSelectedCategory] = useState<string>(COST_CATEGORIES[0]);
@@ -741,7 +767,8 @@ function CostsPanel({
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
-    const saved = await runAsync(async () => {
+    setSaved(false);
+    const savedOk = await runAsync(async () => {
       const submittedKey = String(data.get("key") ?? "flaeche") as KeyType;
       const response = await fetch(editing ? `/api/properties/${propertyId}/costs/${editing.id}` : `/api/properties/${propertyId}/costs`, {
         method: editing ? "PATCH" : "POST",
@@ -781,34 +808,42 @@ function CostsPanel({
         receipts: typeof result.receipt_path === "string" && result.receipt_path ? [result.receipt_path.split("/").at(-1) ?? result.receipt_path] : editing?.receipts ?? [],
       });
     });
-    if (saved) {
+    if (savedOk) {
       form.reset();
       setEditingId(null);
       setSelectedKey("flaeche");
       setSelectedCategory(COST_CATEGORIES[0]);
+      setSaved(true);
     }
   }
 
   async function onReceipt(event: FormEvent<HTMLFormElement>, cost: AppState["costs"][number]) {
     event.preventDefault();
     const form = event.currentTarget;
-    const response = await fetch(`/api/properties/${propertyId}/costs/${cost.id}/receipt`, {
-      method: "POST",
-      body: new FormData(form),
-    });
-    const result = (await response.json().catch(() => null)) as Record<string, unknown> | null;
-    if (!response.ok) {
-      setReceiptError(typeof result?.detail === "string" ? result.detail : "Der Beleg konnte nicht gespeichert werden.");
-      return;
-    }
-    if (typeof result?.fileName !== "string") {
-      setReceiptError("Die API hat keinen gültigen Beleg zurückgegeben.");
-      return;
-    }
-
-    upsertCost({ ...cost, receipts: [result.fileName] });
+    setUploadingReceiptId(cost.id);
+    setReceiptSavedId(null);
     setReceiptError(null);
-    form.reset();
+    try {
+      const response = await fetch(`/api/properties/${propertyId}/costs/${cost.id}/receipt`, {
+        method: "POST",
+        body: new FormData(form),
+      });
+      const result = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+      if (!response.ok) {
+        throw new Error(typeof result?.detail === "string" ? result.detail : "Der Beleg konnte nicht gespeichert werden.");
+      }
+      if (typeof result?.fileName !== "string") {
+        throw new Error("Die API hat keinen gültigen Beleg zurückgegeben.");
+      }
+
+      upsertCost({ ...cost, receipts: [result.fileName] });
+      setReceiptSavedId(cost.id);
+      form.reset();
+    } catch (caught) {
+      setReceiptError(caught instanceof Error ? caught.message : "Der Beleg konnte nicht gespeichert werden.");
+    } finally {
+      setUploadingReceiptId(null);
+    }
   }
 
   async function onOpenReceipt(cost: AppState["costs"][number]) {
@@ -889,9 +924,14 @@ function CostsPanel({
                     <button
                       type="button"
                       className={`${buttonQuiet} min-h-0 text-sm text-stamp-deep`}
-                      onClick={() => void runAsync(() => onDelete(cost.id))}
+                      onClick={() => {
+                        setDeletingCostId(cost.id);
+                        void runAsync(() => onDelete(cost.id)).finally(() => setDeletingCostId(null));
+                      }}
+                      disabled={deletingCostId === cost.id || pending}
+                      aria-busy={deletingCostId === cost.id}
                     >
-                      Löschen
+                      {deletingCostId === cost.id ? "Wird gelöscht …" : "Löschen"}
                     </button>
                   )}
                 </div>
@@ -933,7 +973,15 @@ function CostsPanel({
                         accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
                       />
                     </div>
-                    <button type="submit" className={`${buttonQuiet} min-h-11`}>Beleg hochladen</button>
+                    <button
+                      type="submit"
+                      disabled={uploadingReceiptId === cost.id || pending}
+                      aria-busy={uploadingReceiptId === cost.id}
+                      className={`${buttonQuiet} min-h-11`}
+                    >
+                      {uploadingReceiptId === cost.id ? "Beleg wird hochgeladen …" : "Beleg hochladen"}
+                    </button>
+                    {receiptSavedId === cost.id ? <p role="status" className="text-sm text-ink-muted">Beleg gespeichert.</p> : null}
                   </form>
                 )}
               </div>
@@ -995,9 +1043,12 @@ function CostsPanel({
             </div>
           ) : null}
           <div className="flex flex-wrap gap-3">
-            <button type="submit" className={buttonPrimary}>{editing ? "Änderung speichern" : "Kosten speichern"}</button>
+            <button type="submit" disabled={pending} aria-busy={pending} className={buttonPrimary}>
+              {pending ? "Kosten werden gespeichert …" : editing ? "Änderung speichern" : "Kosten speichern"}
+            </button>
             {editing ? <button type="button" className={buttonQuiet} onClick={() => { setEditingId(null); setSelectedKey("flaeche"); setSelectedCategory(COST_CATEGORIES[0]); }}>Abbrechen</button> : null}
           </div>
+          {saved ? <p role="status" className="text-sm text-ink-muted sm:col-span-4">Kostenposition gespeichert.</p> : null}
           {error ? <div className="sm:col-span-4"><ErrorText>{error}</ErrorText></div> : null}
         </form>
       )}
