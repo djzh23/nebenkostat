@@ -45,29 +45,29 @@ const formulaExamples = [
   {
     title: "Wohnfläche",
     rule: "Kosten × Fläche × Tage ÷ (Gesamtfläche × Jahrestage)",
-    example: "1.200,00 € × 60 m² × 90 Tage ÷ (100 m² × 365 Tage)",
-    result: "177,53 € für Mieter A",
+    example: "1.200,00\u00a0€ × 60 m² × 90 Tage ÷ (100 m² × 365 Tage)",
+    result: "177,53\u00a0€ für Mieter A",
     note: "Der Nenner bleibt fest. Dadurch wird ein nicht belegter Zeitraum als Leerstand sichtbar.",
   },
   {
     title: "Personen",
     rule: "Kosten × Personen-Tage ÷ Summe aller Personen-Tage",
-    example: "365,00 € × 1 Person × 90 Tage ÷ 1.034 Personen-Tage",
-    result: "31,77 € für Mieter A",
+    example: "365,00\u00a0€ × 1 Person × 90 Tage ÷ 1.034 Personen-Tage",
+    result: "31,77\u00a0€ für Mieter A",
     note: "Personen-Tage entstehen aus Personenzahl × belegten Tagen. Leerstandszeiten werden nicht automatisch bewertet.",
   },
   {
     title: "Einheiten",
     rule: "Kosten × Tage ÷ (Anzahl Einheiten × Jahrestage)",
-    example: "600,00 € × 90 Tage ÷ (2 Einheiten × 365 Tage)",
-    result: "73,97 € für eine Einheit",
+    example: "600,00\u00a0€ × 90 Tage ÷ (2 Einheiten × 365 Tage)",
+    result: "73,97\u00a0€ für eine Einheit",
     note: "Jede Einheit erhält denselben Grundanteil; der Zeitraum wird zusätzlich taggenau berücksichtigt.",
   },
   {
     title: "Externe Direktabrechnung",
     rule: "Externer Einzelbetrag × 1",
-    example: "250,00 € × 1",
-    result: "250,00 € für das ausgewählte Mietverhältnis",
+    example: "250,00\u00a0€ × 1",
+    result: "250,00\u00a0€ für das ausgewählte Mietverhältnis",
     note: "Das ist keine eigene Heizkostenberechnung. Der externe Nachweis und die richtige Zuordnung bleiben maßgeblich.",
   },
 ] as const;
@@ -115,7 +115,7 @@ export default function HelpPage() {
             <div className="mt-4 space-y-2 text-xs text-ink-muted">
               <div className="border border-rule px-3 py-2">Objektname · Haus Lindenweg</div>
               <div className="border border-rule px-3 py-2">2 Einheiten · Wohnfläche</div>
-              <div className="border border-rule px-3 py-2">Wasser · 1.200,00 €</div>
+              <div className="border border-rule px-3 py-2">Wasser · 1.200,00{"\u00a0"}€</div>
             </div>
             <p className="mt-4 font-semibold text-stamp-deep">Erste Formel-Karte anzeigen</p>
           </PreviewFrame>
@@ -124,18 +124,18 @@ export default function HelpPage() {
             <p className="font-sans text-lg font-bold">Wasser</p>
             <p className="mt-2 text-xs text-ink-muted">Verteilung nach Wohnfläche</p>
             <div className="mt-5 border-l-2 border-stamp pl-3">
-              <p className="font-mono text-xs leading-relaxed tabular-nums">1.200,00 € × 60 m² × 90 Tage</p>
+              <p className="font-mono text-xs leading-relaxed tabular-nums">1.200,00{"\u00a0"}€ × 60 m² × 90 Tage</p>
               <p className="font-mono text-xs leading-relaxed tabular-nums">÷ (100 m² × 365 Tage)</p>
             </div>
-            <p className="mt-5 text-right font-mono text-xl font-semibold tabular-nums">177,53 €</p>
+            <p className="mt-5 text-right font-mono text-xl font-semibold tabular-nums">177,53{"\u00a0"}€</p>
           </PreviewFrame>
 
           <PreviewFrame label="3 · Ergebnis: Saldo und PDF-Ausgabe">
             <p className="font-sans text-lg font-bold">Saldo je Mietpartei</p>
             <div className="mt-4 space-y-3 text-xs">
-              <div className="flex justify-between border-b border-dashed border-rule pb-2"><span>Mieter A</span><span className="font-mono">90,70 € Guthaben</span></div>
-              <div className="flex justify-between border-b border-dashed border-rule pb-2"><span>Mieter B</span><span className="font-mono">47,68 € Nachzahlung</span></div>
-              <div className="flex justify-between"><span>Mieter C</span><span className="font-mono">162,31 € Guthaben</span></div>
+              <div className="flex justify-between border-b border-dashed border-rule pb-2"><span>Mieter A</span><span className="whitespace-nowrap font-mono">90,70{"\u00a0"}€ Guthaben</span></div>
+              <div className="flex justify-between border-b border-dashed border-rule pb-2"><span>Mieter B</span><span className="whitespace-nowrap font-mono">47,68{"\u00a0"}€ Nachzahlung</span></div>
+              <div className="flex justify-between"><span>Mieter C</span><span className="whitespace-nowrap font-mono">162,31{"\u00a0"}€ Guthaben</span></div>
             </div>
             <p className="mt-5 font-semibold underline decoration-ink/40 underline-offset-4">Mieter-PDF laden</p>
           </PreviewFrame>
@@ -166,23 +166,23 @@ export default function HelpPage() {
           <div>
             <h3 className="font-sans text-xl font-bold">Beispieldaten</h3>
             <dl className="mt-5 divide-y divide-dashed divide-rule text-sm">
-              <div className="flex justify-between gap-4 py-3"><dt>Wasser</dt><dd className="font-mono tabular-nums">1.200,00 € · Wohnfläche</dd></div>
-              <div className="flex justify-between gap-4 py-3"><dt>Müll</dt><dd className="font-mono tabular-nums">365,00 € · Personen</dd></div>
-              <div className="flex justify-between gap-4 py-3"><dt>Heizung</dt><dd className="font-mono tabular-nums">250,00 € · direkt an B</dd></div>
+              <div className="flex justify-between gap-4 py-3"><dt>Wasser</dt><dd className="whitespace-nowrap font-mono tabular-nums">1.200,00{"\u00a0"}€ · Wohnfläche</dd></div>
+              <div className="flex justify-between gap-4 py-3"><dt>Müll</dt><dd className="whitespace-nowrap font-mono tabular-nums">365,00{"\u00a0"}€ · Personen</dd></div>
+              <div className="flex justify-between gap-4 py-3"><dt>Heizung</dt><dd className="whitespace-nowrap font-mono tabular-nums">250,00{"\u00a0"}€ · direkt an B</dd></div>
               <div className="flex justify-between gap-4 py-3"><dt>Einheiten</dt><dd className="font-mono tabular-nums">60 m² + 40 m²</dd></div>
               <div className="flex justify-between gap-4 py-3"><dt>Personen-Tage</dt><dd className="font-mono tabular-nums">1.034 insgesamt</dd></div>
-              <div className="flex justify-between gap-4 py-3"><dt>Vorauszahlungen</dt><dd className="font-mono tabular-nums">A 300 · B 700 · C 900 €</dd></div>
+              <div className="flex justify-between gap-4 py-3"><dt>Vorauszahlungen</dt><dd className="whitespace-nowrap font-mono tabular-nums">A 300 · B 700 · C 900{"\u00a0"}€</dd></div>
             </dl>
           </div>
           <div className="border-l-2 border-stamp pl-5">
             <p className="font-mono text-sm leading-relaxed tabular-nums text-ink-muted">
-              Wasser: 1.200,00 € × 60 m² × 90 Tage ÷ (100 m² × 365 Tage) = 177,53 €
+              Wasser: 1.200,00{"\u00a0"}€ × 60 m² × 90 Tage ÷ (100 m² × 365 Tage) = 177,53{"\u00a0"}€
             </p>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-ink-muted">
-              Für Mieter A kommen 31,77 € Müll und 177,53 € Wasser zusammen. Die Kosten betragen 209,30 €. Davon werden 300,00 € Vorauszahlungen abgezogen:
+              Für Mieter A kommen 31,77{"\u00a0"}€ Müll und 177,53{"\u00a0"}€ Wasser zusammen. Die Kosten betragen 209,30{"\u00a0"}€. Davon werden 300,00{"\u00a0"}€ Vorauszahlungen abgezogen:
             </p>
-            <p className="mt-4 font-mono text-2xl font-semibold tabular-nums">209,30 € − 300,00 € = −90,70 €</p>
-            <p className="mt-3 font-semibold text-stamp-deep">Ergebnis: 90,70 € Guthaben</p>
+            <p className="mt-4 font-mono text-2xl font-semibold tabular-nums">209,30{"\u00a0"}€ − 300,00{"\u00a0"}€ = −90,70{"\u00a0"}€</p>
+            <p className="mt-3 font-semibold text-stamp-deep">Ergebnis: 90,70{"\u00a0"}€ Guthaben</p>
           </div>
         </div>
         <div className="mt-8 overflow-x-auto">
@@ -197,9 +197,9 @@ export default function HelpPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-dashed divide-rule">
-              <tr><th scope="row" className="py-3 pr-4 text-left font-semibold">Mieter A</th><td className="py-3 pr-4 font-mono">209,30 €</td><td className="py-3 pr-4 font-mono">300,00 €</td><td className="py-3 text-right font-mono">90,70 € Guthaben</td></tr>
-              <tr><th scope="row" className="py-3 pr-4 text-left font-semibold">Mieter B</th><td className="py-3 pr-4 font-mono">747,68 €</td><td className="py-3 pr-4 font-mono">700,00 €</td><td className="py-3 text-right font-mono">47,68 € Nachzahlung</td></tr>
-              <tr><th scope="row" className="py-3 pr-4 text-left font-semibold">Mieter C</th><td className="py-3 pr-4 font-mono">737,69 €</td><td className="py-3 pr-4 font-mono">900,00 €</td><td className="py-3 text-right font-mono">162,31 € Guthaben</td></tr>
+              <tr><th scope="row" className="py-3 pr-4 text-left font-semibold">Mieter A</th><td className="whitespace-nowrap py-3 pr-4 font-mono">209,30{"\u00a0"}€</td><td className="whitespace-nowrap py-3 pr-4 font-mono">300,00{"\u00a0"}€</td><td className="whitespace-nowrap py-3 text-right font-mono">90,70{"\u00a0"}€ Guthaben</td></tr>
+              <tr><th scope="row" className="py-3 pr-4 text-left font-semibold">Mieter B</th><td className="whitespace-nowrap py-3 pr-4 font-mono">747,68{"\u00a0"}€</td><td className="whitespace-nowrap py-3 pr-4 font-mono">700,00{"\u00a0"}€</td><td className="whitespace-nowrap py-3 text-right font-mono">47,68{"\u00a0"}€ Nachzahlung</td></tr>
+              <tr><th scope="row" className="py-3 pr-4 text-left font-semibold">Mieter C</th><td className="whitespace-nowrap py-3 pr-4 font-mono">737,69{"\u00a0"}€</td><td className="whitespace-nowrap py-3 pr-4 font-mono">900,00{"\u00a0"}€</td><td className="whitespace-nowrap py-3 text-right font-mono">162,31{"\u00a0"}€ Guthaben</td></tr>
             </tbody>
           </table>
         </div>
@@ -248,7 +248,7 @@ export default function HelpPage() {
             Der Saldo ist immer: Kostenanteil minus angerechnete Vorauszahlungen. Standardmäßig zählt jeder berührte Kalendermonat als voller Vorauszahlungsmonat; optional kann taggenau gerechnet werden.
           </p>
           <p className="mt-5 border-l-2 border-stamp pl-4 font-mono text-sm leading-relaxed tabular-nums">
-            747,68 € Kosten − 700,00 € Vorauszahlungen = 47,68 € Nachzahlung
+            747,68{"\u00a0"}€ Kosten − 700,00{"\u00a0"}€ Vorauszahlungen = 47,68{"\u00a0"}€ Nachzahlung
           </p>
           <p className="mt-4 text-sm leading-relaxed text-ink-muted">
             Ein negatives Ergebnis wird als Guthaben angezeigt. Tatsächliche Zahlungseingänge prüft die App nicht.

@@ -33,6 +33,7 @@ body {
   background: var(--desk);
   color: var(--ink);
   font-family: "Archivo", system-ui, sans-serif;
+  text-wrap: pretty;
   -webkit-font-smoothing: antialiased;
 }
 
