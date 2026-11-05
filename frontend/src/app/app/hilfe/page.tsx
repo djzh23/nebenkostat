@@ -84,13 +84,14 @@ const formulaExamples = [
   },
 ] as const;
 
-type ControlVariant = "primary" | "link" | "outline";
+type ControlVariant = "primary" | "link" | "outline" | "warning";
 
 function ControlToken({ label, variant }: { label: string; variant: ControlVariant }) {
   const classes = {
     primary: "inline-flex min-h-9 items-center bg-stamp px-3 py-1.5 text-sm font-semibold text-paper",
     link: "inline-flex min-h-9 items-center px-1 text-sm font-semibold text-ink underline decoration-ink/40 decoration-2 underline-offset-4",
     outline: "inline-flex min-h-9 items-center border border-ink px-3 py-1.5 text-sm font-semibold text-ink",
+    warning: "inline-flex min-h-9 items-center border border-stamp px-3 py-1.5 text-sm font-semibold text-stamp-deep",
   }[variant];
 
   return <span className={classes}>{label}</span>;
@@ -98,15 +99,15 @@ function ControlToken({ label, variant }: { label: string; variant: ControlVaria
 
 function PreviewFrame({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <figure className="border border-ink/20 bg-desk p-3">
-      <div className="receipt min-h-52 px-4 py-5 text-sm">
+    <figure className="flex h-full flex-col border border-ink/20 bg-desk p-3">
+      <div className="receipt min-h-52 flex-1 px-4 py-5 text-sm">
         <div className="mb-4 flex items-center justify-between border-b border-ink pb-2">
           <span className="font-sans font-bold">Nebenkostat</span>
           <span className="font-mono text-[0.65rem] text-ink-muted">VORSCHAU · MUSTERDATEN</span>
         </div>
         {children}
       </div>
-      <figcaption className="px-1 pt-3 text-sm font-semibold text-ink-muted">{label}</figcaption>
+      <figcaption className="min-h-14 px-1 pt-3 text-sm font-semibold text-ink-muted">{label}</figcaption>
     </figure>
   );
 }
@@ -137,6 +138,7 @@ export default function HelpPage() {
           <ControlToken label="Kosten speichern" variant="primary" />
           <ControlToken label="PDF laden" variant="link" />
           <ControlToken label="Bearbeiten" variant="outline" />
+          <ControlToken label="Prüfen" variant="warning" />
         </div>
         <div className="grid gap-x-10 gap-y-6 md:grid-cols-2">
           <div>
