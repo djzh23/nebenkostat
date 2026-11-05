@@ -14,6 +14,7 @@ import { settlementYear } from "@/lib/domain/settlement";
 import type { AppState, KeyType } from "@/lib/domain/types";
 import { buttonPrimary, buttonSecondary, EmptyState, Panel, Pill, SectionHeading } from "../../_components/ui";
 import { BetaFeedback } from "./beta-feedback";
+import { FirstRunOnboarding } from "./first-run-onboarding";
 
 const DAY_MS = 86_400_000;
 
@@ -217,6 +218,8 @@ export function Dashboard() {
           Objekt anlegen
         </Link>
       </div>
+
+      {propertiesLoaded && properties.length === 0 ? <FirstRunOnboarding /> : null}
 
       <Panel>
         <SectionHeading note={`${properties.length} Objekt${properties.length === 1 ? "" : "e"}`}>
