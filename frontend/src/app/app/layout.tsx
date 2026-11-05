@@ -40,6 +40,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
       <div className="mx-auto w-full max-w-6xl px-4 py-10 md:px-8 md:py-14">{children}</div>
+      <footer data-no-print className="border-t border-ink/20 bg-desk">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm text-ink-muted md:px-8">
+          <span>Nebenkostat Beta</span>
+          <Link href="/app/system-info" className="font-semibold underline decoration-ink/30 decoration-2 underline-offset-4 hover:decoration-stamp">
+            System-Informationen
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }
