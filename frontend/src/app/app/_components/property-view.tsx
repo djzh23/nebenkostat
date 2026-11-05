@@ -997,7 +997,7 @@ function CostsPanel({
       {locked ? (
         <p className="text-sm text-ink-muted">Kosten sind gesperrt, weil die Abrechnung {year} abgeschlossen ist.</p>
       ) : (
-        <form key={editing?.id ?? "new-cost"} onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+        <form key={editing?.id ?? "new-cost"} onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-start">
           <div>
             <label htmlFor="cost-category" className={fieldLabel}>Kostenart</label>
             <select id="cost-category" name="category" className={selectClass} value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)}>
@@ -1042,7 +1042,7 @@ function CostsPanel({
               </p>
             </div>
           ) : null}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 sm:pt-7">
             <button type="submit" disabled={pending} aria-busy={pending} className={buttonPrimary}>
               {pending ? "Kosten werden gespeichert …" : editing ? "Änderung speichern" : "Kosten speichern"}
             </button>
