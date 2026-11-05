@@ -32,6 +32,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
               <Link href="/app/objekte/neu" className="hover:underline underline-offset-4">
                 Objekt anlegen
               </Link>
+              <Link href="/app/hilfe" className="hover:underline underline-offset-4">
+                So funktioniert&apos;s
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-4 text-xs text-ink-muted">
