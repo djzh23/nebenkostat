@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { createClient } from "@/lib/supabase/server";
 
+import { BetaSystemInfo } from "./_components/beta-system-info";
 import { SignOutButton } from "./_components/sign-out-button";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -41,11 +42,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       </header>
       <div className="mx-auto w-full max-w-6xl px-4 py-10 md:px-8 md:py-14">{children}</div>
       <footer data-no-print className="border-t border-ink/20 bg-desk">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm text-ink-muted md:px-8">
-          <span>Nebenkostat Beta</span>
-          <Link href="/app/system-info" className="font-semibold underline decoration-ink/30 decoration-2 underline-offset-4 hover:decoration-stamp">
-            System-Informationen
-          </Link>
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-6 md:px-8">
+          <div className="text-sm text-ink-muted">Nebenkostat Beta</div>
+          <BetaSystemInfo />
         </div>
       </footer>
     </div>

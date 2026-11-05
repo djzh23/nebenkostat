@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import Link from "next/link";
 import { buttonPrimary, ErrorText, Panel, SectionHeading } from "../../_components/ui";
 
 export function BetaFeedback() {
@@ -65,7 +64,7 @@ export function BetaFeedback() {
           />
           <span>
             Ich möchte Beta-Updates und ein frühes Preisangebot per E-Mail erhalten. Die Einwilligung kann ich jederzeit
-            widerrufen. <Link href="/datenschutz" className="underline underline-offset-4">Datenschutz</Link>
+            widerrufen.
           </span>
         </label>
         <div className="flex flex-wrap items-center gap-4">

@@ -1,6 +1,5 @@
 import { ReceiptCalculator } from "./_components/receipt-calculator";
 import { CalculatorCta } from "./_components/calculator-cta";
-import Link from "next/link";
 import { ButtonLink } from "@/components/ui/button";
 import { Receipt } from "@/components/ui/receipt";
 import { Container, Section, SplitSection } from "@/components/ui/layout";
@@ -200,19 +199,8 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-ink/20">
-        <Container className="flex flex-col gap-3 py-10 text-sm text-ink-muted md:flex-row md:items-center md:justify-between">
+        <Container className="flex flex-col gap-3 py-10 text-sm text-ink-muted">
           <p className="font-sans font-bold text-ink">Nebenkostat</p>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-            <nav aria-label="Rechtliches" className="flex gap-5">
-              <Link href="/impressum" className="underline decoration-ink/30 decoration-2 underline-offset-4 hover:decoration-stamp">
-                Impressum
-              </Link>
-              <Link href="/datenschutz" className="underline decoration-ink/30 decoration-2 underline-offset-4 hover:decoration-stamp">
-                Datenschutz
-              </Link>
-            </nav>
-            <p>Vor Veröffentlichung vollständig mit den Betreiberangaben ergänzen.</p>
-          </div>
         </Container>
       </footer>
     </>
