@@ -13,43 +13,43 @@ const workflow = [
     number: "01",
     title: "Objekt anlegen",
     body: "Gib dem Objekt einen Namen und trage die echte Adresse ein. Wähle das Abrechnungsjahr, für das du die Kosten sammeln möchtest.",
-    click: "Klicke oben auf „Objekt anlegen“ oder starte den „Schnellstart“.",
-    after: "Danach öffnet sich die Objektseite. Dort siehst du dein neues Objekt und die nächsten Eingabefelder.",
+    control: { label: "Objekt anlegen", variant: "primary" as const, location: "oben rechts auf der Übersichtsseite" },
+    expectation: "Die Objektseite öffnet sich. Dort siehst du dein neues Objekt und die nächsten Eingabefelder.",
   },
   {
     number: "02",
     title: "Einheiten erfassen",
     body: "Lege jede Wohnung einzeln an. Verwende eine klare Bezeichnung wie „Erdgeschoss links“ und trage die Wohnfläche in Quadratmetern ein.",
-    click: "Klicke im Bereich „Einheiten“ auf „Einheit hinzufügen“ und speichere jede Wohnung.",
-    after: "Die Wohnungen erscheinen als Liste. Die Gesamtfläche wird automatisch angezeigt.",
+    control: { label: "Einheit hinzufügen", variant: "primary" as const, location: "im Abschnitt „Einheiten“" },
+    expectation: "Die Wohnung erscheint in der Liste. Die Gesamtfläche wird automatisch angezeigt.",
   },
   {
     number: "03",
     title: "Mietverhältnisse eintragen",
     body: "Trage pro Wohnung die Mietpartei, Beginn und Ende des Mietzeitraums, die Personenzahl und die monatliche Vorauszahlung ein.",
-    click: "Klicke im Bereich „Mietverhältnisse“ auf „Mietverhältnis hinzufügen“ und fülle die Felder aus.",
-    after: "Das Mietverhältnis erscheint unter der passenden Wohnung. Ein Mieterwechsel wird durch einen zweiten Zeitraum erfasst.",
+    control: { label: "Mietverhältnis speichern", variant: "primary" as const, location: "am Ende des Formulars „Mietverhältnisse“" },
+    expectation: "Das Mietverhältnis erscheint unter der passenden Wohnung. Einen Mieterwechsel erfasst du als zweiten Zeitraum.",
   },
   {
     number: "04",
     title: "Kosten und Belege sammeln",
     body: "Lege jede Rechnung als eigene Kostenposition an. Wähle Betrag und passenden Verteilungsschlüssel und lade den zugehörigen Beleg hoch.",
-    click: "Klicke im Bereich „Kosten und Belege“ auf „Kosten hinzufügen“ und danach auf „Kosten speichern“.",
-    after: "Die Kostenposition erscheint in der Liste. Fehlende Belege werden deutlich als offener Punkt markiert.",
+    control: { label: "Kosten speichern", variant: "primary" as const, location: "am Ende des Kostenformulars" },
+    expectation: "Die Kostenposition erscheint in der Liste. Fehlende Belege werden als offener Punkt markiert.",
   },
   {
     number: "05",
     title: "Rechenweg und Prüfliste kontrollieren",
     body: "Öffne die Abrechnung und lies die Formel-Karten. Prüfe außerdem jeden Hinweis in der Prüfliste, auch wenn der Export nicht automatisch blockiert wird.",
-    click: "Klicke beim Objekt auf „Abrechnung“. Scrolle zu „Formel-Karten“ und zur „Prüfliste vor dem Versand“.",
-    after: "Du siehst für jede Kostenposition die Eingaben, den Rechenweg und den Anteil pro Mietpartei.",
+    control: { label: "Abrechnung", variant: "outline" as const, location: "rechts neben deinem Objekt in der Übersicht" },
+    expectation: "Du siehst pro Kostenposition die Eingaben, den Rechenweg und den Anteil jeder Mietpartei.",
   },
   {
     number: "06",
     title: "Abschließen und PDFs verwenden",
     body: "Schließe die Abrechnung erst ab, wenn die Daten und offenen Hinweise geprüft sind. Danach bleibt dieses Abrechnungsjahr unveränderlich archiviert.",
-    click: "Klicke unten auf „Abrechnung abschließen“ und bestätige anschließend bewusst.",
-    after: "Danach öffnest du entweder das archivierte Gesamt-PDF oder beim jeweiligen Saldo das PDF für genau diese Mietpartei.",
+    control: { label: "Abrechnung abschließen", variant: "primary" as const, location: "ganz unten auf der Abrechnungsseite" },
+    expectation: "Danach öffnest du das Gesamt-PDF oder beim jeweiligen Saldo das PDF für genau diese Mietpartei.",
   },
 ] as const;
 
@@ -83,6 +83,18 @@ const formulaExamples = [
     note: "Das ist keine eigene Heizkostenberechnung. Der externe Nachweis und die richtige Zuordnung bleiben maßgeblich.",
   },
 ] as const;
+
+type ControlVariant = "primary" | "link" | "outline";
+
+function ControlToken({ label, variant }: { label: string; variant: ControlVariant }) {
+  const classes = {
+    primary: "inline-flex min-h-9 items-center bg-stamp px-3 py-1.5 text-sm font-semibold text-paper",
+    link: "inline-flex min-h-9 items-center px-1 text-sm font-semibold text-ink underline decoration-ink/40 decoration-2 underline-offset-4",
+    outline: "inline-flex min-h-9 items-center border border-ink px-3 py-1.5 text-sm font-semibold text-ink",
+  }[variant];
+
+  return <span className={classes}>{label}</span>;
+}
 
 function PreviewFrame({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -121,6 +133,11 @@ export default function HelpPage() {
 
       <Panel>
         <SectionHeading note="Du brauchst keine Vorkenntnisse">Die wichtigsten Schaltflächen</SectionHeading>
+        <div className="mb-6 flex flex-wrap items-center gap-3 border-b border-dashed border-rule pb-6">
+          <ControlToken label="Kosten speichern" variant="primary" />
+          <ControlToken label="PDF laden" variant="link" />
+          <ControlToken label="Bearbeiten" variant="outline" />
+        </div>
         <div className="grid gap-x-10 gap-y-6 md:grid-cols-2">
           <div>
             <h3 className="font-sans text-lg font-bold">Hauptbutton</h3>
@@ -188,9 +205,18 @@ export default function HelpPage() {
               <div>
                 <h3 className="font-sans text-xl font-bold">{step.title}</h3>
                 <p className="mt-2 max-w-3xl text-base leading-relaxed text-ink-muted">{step.body}</p>
-                <div className="mt-4 grid gap-2 border-l-2 border-rule pl-4 text-sm leading-relaxed text-ink-muted sm:grid-cols-2 sm:gap-6">
-                  <p><span className="font-semibold text-ink">Du klickst:</span> {step.click}</p>
-                  <p><span className="font-semibold text-ink">Danach siehst du:</span> {step.after}</p>
+                <div className="mt-5 grid gap-4 text-sm leading-relaxed sm:grid-cols-2 sm:gap-6">
+                  <div className="border-l-2 border-stamp bg-stamp/5 px-4 py-3">
+                    <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-stamp-deep">Klickziel</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <ControlToken label={step.control.label} variant={step.control.variant} />
+                      <span className="text-ink-muted">{step.control.location}</span>
+                    </div>
+                  </div>
+                  <div className="border-l-2 border-rule px-4 py-3">
+                    <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">Erwartung</p>
+                    <p className="mt-2 text-ink-muted">{step.expectation}</p>
+                  </div>
                 </div>
               </div>
             </li>
