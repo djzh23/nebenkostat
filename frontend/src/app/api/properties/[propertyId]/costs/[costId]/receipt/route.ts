@@ -9,7 +9,15 @@ const maxFileSize = 10 * 1024 * 1024;
 const signedUrlLifetimeSeconds = 60;
 
 function safeFileName(name: string) {
-  const normalized = name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]/g, "-");
+  const transliterated = name
+    .replace(/Ä/g, "Ae")
+    .replace(/Ö/g, "Oe")
+    .replace(/Ü/g, "Ue")
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss");
+  const normalized = transliterated.normalize("NFKD").replace(/[^a-zA-Z0-9._-]/g, "-");
   return normalized.replace(/-+/g, "-").replace(/^-|-$/g, "") || "beleg";
 }
 

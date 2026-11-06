@@ -5,7 +5,15 @@ import { createClient } from "@/lib/supabase/server";
 type RouteContext = { params: Promise<{ propertyId: string }> };
 
 function safeFilePart(value: string) {
-  const normalized = value.normalize("NFKD").replace(/[^a-zA-Z0-9._-]/g, "-");
+  const transliterated = value
+    .replace(/Ä/g, "Ae")
+    .replace(/Ö/g, "Oe")
+    .replace(/Ü/g, "Ue")
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss");
+  const normalized = transliterated.normalize("NFKD").replace(/[^a-zA-Z0-9._-]/g, "-");
   return normalized.replace(/-+/g, "-").replace(/^-|-$/g, "") || "Beleg";
 }
 
