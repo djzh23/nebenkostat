@@ -16,9 +16,16 @@ export function BillingChecklist({ state, propertyId, year }: { state: AppState;
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {checklist.groups.map((group) => (
           <details key={group.id} className="border border-rule p-4">
-            <summary className="flex cursor-pointer list-none items-start justify-between gap-3 font-semibold [&::-webkit-details-marker]:hidden">
+            <summary
+              className="flex cursor-default list-none items-start justify-between gap-3 font-semibold [&::-webkit-details-marker]:hidden"
+              onClick={(event) => {
+                if (event.detail > 0 && !(event.target instanceof Element && event.target.closest("[data-disclosure-control]"))) {
+                  event.preventDefault();
+                }
+              }}
+            >
               <span className="flex min-w-0 items-center gap-2">
-                <span className="disclosure-icon" aria-hidden="true" />
+                <span className="disclosure-icon cursor-pointer" data-disclosure-control aria-hidden="true" />
                 <span>{group.label}</span>
               </span>
               <span

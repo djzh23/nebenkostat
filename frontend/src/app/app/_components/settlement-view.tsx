@@ -322,7 +322,14 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
         </h2>
         {result.costs.map((settlement) => (
           <details key={settlement.cost.id} className="receipt group px-5 py-6 sm:px-8">
-            <summary className="flex cursor-pointer list-none flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+            <summary
+              className="flex cursor-default list-none flex-wrap items-baseline justify-between gap-x-6 gap-y-2"
+              onClick={(event) => {
+                if (event.detail > 0 && !(event.target instanceof Element && event.target.closest("[data-disclosure-control]"))) {
+                  event.preventDefault();
+                }
+              }}
+            >
               <span>
                 <span className="font-sans text-xl font-bold">{settlement.cost.category}</span>
                 <span className="ml-3 text-sm text-ink-muted">{KEY_LABELS[settlement.cost.key]}</span>
@@ -330,7 +337,7 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
               <span className="flex items-center gap-3">
                 <span className="font-mono text-lg font-semibold tabular-nums">{formatEur(settlement.cost.amountCents)}</span>
                 <span className="hidden text-xs font-semibold underline decoration-ink/40 decoration-2 underline-offset-4 sm:inline">Rechenweg anzeigen</span>
-                <span className="disclosure-icon" aria-hidden="true" />
+                <span className="disclosure-icon cursor-pointer" data-disclosure-control aria-hidden="true" />
               </span>
             </summary>
 
