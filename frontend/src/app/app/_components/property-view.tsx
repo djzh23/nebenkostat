@@ -749,6 +749,7 @@ function CostsPanel({
   const [zipError, setZipError] = useState<string | null>(null);
   const [uploadingReceiptId, setUploadingReceiptId] = useState<string | null>(null);
   const [deletingReceiptId, setDeletingReceiptId] = useState<string | null>(null);
+  const [confirmingReceiptId, setConfirmingReceiptId] = useState<string | null>(null);
   const [deletingCostId, setDeletingCostId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<KeyType>("flaeche");
@@ -851,8 +852,7 @@ function CostsPanel({
   }
 
   async function onDeleteReceipt(cost: AppState["costs"][number]) {
-    if (!window.confirm("Datei wirklich löschen? Die Kostenposition bleibt erhalten.")) return;
-
+    setConfirmingReceiptId(null);
     setDeletingReceiptId(cost.id);
     setReceiptStatus(null);
     setReceiptError(null);
@@ -867,6 +867,7 @@ function CostsPanel({
       setReceiptStatus({ costId: cost.id, message: "Datei gelöscht." });
     } catch (caught) {
       setReceiptError(caught instanceof Error ? caught.message : "Die Datei konnte nicht gelöscht werden.");
+      setConfirmingReceiptId(cost.id);
     } finally {
       setDeletingReceiptId(null);
     }
@@ -974,27 +975,54 @@ function CostsPanel({
                     {cost.receipts.map((receipt, index) => (
                       <li key={`${receipt}-${index}`} className="flex flex-wrap items-center gap-x-4 gap-y-1">
                         <span>{receipt}</span>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                          <button
-                            type="button"
-                            className={`${buttonQuiet} min-h-0 text-sm`}
-                            onClick={() => void onOpenReceipt(cost)}
-                            disabled={openingReceiptId === cost.id || deletingReceiptId === cost.id}
-                          >
-                            {openingReceiptId === cost.id ? "Wird geöffnet …" : "Datei öffnen"}
-                          </button>
-                          {!locked ? (
+                        {confirmingReceiptId === cost.id ? (
+                          <div className="basis-full flex flex-wrap items-center gap-x-4 gap-y-2 border-l-2 border-stamp pl-3 text-sm" role="group" aria-label="Datei löschen bestätigen">
+                            <span>Diese Datei wirklich löschen? Die Kostenposition bleibt erhalten.</span>
                             <button
                               type="button"
                               className={`${buttonQuiet} min-h-0 text-sm text-stamp-deep`}
                               onClick={() => void onDeleteReceipt(cost)}
-                              disabled={deletingReceiptId === cost.id || openingReceiptId === cost.id}
+                              disabled={deletingReceiptId === cost.id}
                               aria-busy={deletingReceiptId === cost.id}
                             >
-                              {deletingReceiptId === cost.id ? "Wird gelöscht …" : "Datei löschen"}
+                              {deletingReceiptId === cost.id ? "Wird gelöscht …" : "Löschen"}
                             </button>
-                          ) : null}
-                        </div>
+                            <button
+                              type="button"
+                              className={`${buttonQuiet} min-h-0 text-sm`}
+                              onClick={() => setConfirmingReceiptId(null)}
+                              disabled={deletingReceiptId === cost.id}
+                            >
+                              Abbrechen
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                            <button
+                              type="button"
+                              className={`${buttonQuiet} min-h-0 text-sm`}
+                              onClick={() => void onOpenReceipt(cost)}
+                              disabled={openingReceiptId === cost.id || deletingReceiptId === cost.id}
+                            >
+                              {openingReceiptId === cost.id ? "Wird geöffnet …" : "Datei öffnen"}
+                            </button>
+                            {!locked ? (
+                              <button
+                                type="button"
+                                className={`${buttonQuiet} min-h-0 text-sm text-stamp-deep`}
+                                onClick={() => {
+                                  setConfirmingReceiptId(cost.id);
+                                  setReceiptStatus(null);
+                                  setReceiptError(null);
+                                }}
+                                disabled={deletingReceiptId === cost.id || openingReceiptId === cost.id}
+                                aria-expanded={confirmingReceiptId === cost.id}
+                              >
+                                Datei löschen
+                              </button>
+                            ) : null}
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -1014,7 +1042,7 @@ function CostsPanel({
                     </div>
                     <button
                       type="submit"
-                      disabled={uploadingReceiptId === cost.id || deletingReceiptId === cost.id || pending}
+                      disabled={uploadingReceiptId === cost.id || deletingReceiptId === cost.id || confirmingReceiptId === cost.id || pending}
                       aria-busy={uploadingReceiptId === cost.id}
                       className={`${buttonQuiet} min-h-11`}
                     >
