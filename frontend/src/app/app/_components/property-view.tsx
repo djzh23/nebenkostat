@@ -942,7 +942,7 @@ function CostsPanel({
                   Belege <span className="font-mono">({cost.receipts.length})</span>
                 </p>
                 {cost.receipts.length === 0 ? (
-                  <p className="text-sm text-stamp-deep">Noch kein Beleg. Ohne Beleg fehlt der Nachweis für diese Position.</p>
+                  <p className="text-sm text-stamp-deep">Noch kein Nachweis. Für diese Kostenposition fehlt noch die zugehörige Rechnung oder ein anderer Nachweis.</p>
                 ) : (
                   <ul className="space-y-1 text-sm text-ink-muted">
                     {cost.receipts.map((receipt, index) => (
@@ -954,22 +954,22 @@ function CostsPanel({
                           onClick={() => void onOpenReceipt(cost)}
                           disabled={openingReceiptId === cost.id}
                         >
-                          {openingReceiptId === cost.id ? "Wird geöffnet …" : "Beleg öffnen"}
+                          {openingReceiptId === cost.id ? "Wird geöffnet …" : "Datei öffnen"}
                         </button>
                       </li>
                     ))}
                   </ul>
                 )}
                 {locked ? null : (
-                  <form onSubmit={(event) => void onReceipt(event, cost)} className="flex flex-wrap items-end gap-3">
-                    <div className="min-w-0 flex-1">
-                      <label htmlFor={`receipt-${cost.id}`} className="sr-only">Belegname für {cost.category}</label>
+                  <form onSubmit={(event) => void onReceipt(event, cost)} className="mt-4 grid gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                    <div className="min-w-0">
+                      <label htmlFor={`receipt-${cost.id}`} className={fieldLabel}>Neue Datei auswählen</label>
                       <input
                         id={`receipt-${cost.id}`}
                         name="receipt"
                         type="file"
                         required
-                        className={fieldText}
+                        className={`${fieldText} file:mr-3 file:border-0 file:bg-ink file:px-3 file:py-1.5 file:font-sans file:font-semibold file:text-paper`}
                         accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
                       />
                     </div>
@@ -979,9 +979,9 @@ function CostsPanel({
                       aria-busy={uploadingReceiptId === cost.id}
                       className={`${buttonQuiet} min-h-11`}
                     >
-                      {uploadingReceiptId === cost.id ? "Beleg wird hochgeladen …" : "Beleg hochladen"}
+                      {uploadingReceiptId === cost.id ? "Datei wird hochgeladen …" : "Datei hochladen"}
                     </button>
-                    {receiptSavedId === cost.id ? <p role="status" className="text-sm text-ink-muted">Beleg gespeichert.</p> : null}
+                    {receiptSavedId === cost.id ? <p role="status" className="text-sm text-ink-muted sm:col-span-2">Datei gespeichert.</p> : null}
                   </form>
                 )}
               </div>
