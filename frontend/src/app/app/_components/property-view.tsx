@@ -743,6 +743,7 @@ function CostsPanel({
   const [saved, setSaved] = useState(false);
   const [receiptError, setReceiptError] = useState<string | null>(null);
   const [receiptStatus, setReceiptStatus] = useState<{ costId: string; message: string } | null>(null);
+  const [selectedReceipt, setSelectedReceipt] = useState<{ costId: string; name: string } | null>(null);
   const [openingReceiptId, setOpeningReceiptId] = useState<string | null>(null);
   const [receiptOpenError, setReceiptOpenError] = useState<string | null>(null);
   const [zipDownloading, setZipDownloading] = useState(false);
@@ -839,10 +840,8 @@ function CostsPanel({
       }
 
       upsertCost({ ...cost, receipts: [result.fileName] });
-      setReceiptStatus({
-        costId: cost.id,
-        message: cost.receipts.length > 0 ? "Datei ersetzt." : "Datei gespeichert.",
-      });
+      setReceiptStatus({ costId: cost.id, message: "Datei gespeichert." });
+      setSelectedReceipt(null);
       form.reset();
     } catch (caught) {
       setReceiptError(caught instanceof Error ? caught.message : "Der Beleg konnte nicht gespeichert werden.");
@@ -855,6 +854,7 @@ function CostsPanel({
     setConfirmingReceiptId(null);
     setDeletingReceiptId(cost.id);
     setReceiptStatus(null);
+    setSelectedReceipt(null);
     setReceiptError(null);
     try {
       const response = await fetch(`/api/properties/${propertyId}/costs/${cost.id}/receipt`, { method: "DELETE" });
@@ -1027,28 +1027,38 @@ function CostsPanel({
                     ))}
                   </ul>
                 )}
-                {locked ? null : (
+                {locked || cost.receipts.length > 0 ? null : (
                   <form onSubmit={(event) => void onReceipt(event, cost)} className="mt-4 grid gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                     <div className="min-w-0">
-                      <label htmlFor={`receipt-${cost.id}`} className={fieldLabel}>Neue Datei auswählen</label>
+                      <label htmlFor={`receipt-${cost.id}`} className={fieldLabel}>Datei auswählen</label>
                       <input
                         id={`receipt-${cost.id}`}
                         name="receipt"
                         type="file"
                         required
+                        aria-describedby={`receipt-help-${cost.id}`}
+                        onChange={(event) => {
+                          const name = event.target.files?.[0]?.name;
+                          setSelectedReceipt(name ? { costId: cost.id, name } : null);
+                          setReceiptStatus(null);
+                          setReceiptError(null);
+                        }}
                         className={`${fieldText} file:mr-3 file:border-0 file:bg-ink file:px-3 file:py-1.5 file:font-sans file:font-semibold file:text-paper`}
                         accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
                       />
+                      <p id={`receipt-help-${cost.id}`} className="mt-2 text-xs leading-relaxed text-ink-muted">
+                        {selectedReceipt?.costId === cost.id
+                          ? <><span className="font-semibold">{selectedReceipt.name}</span> ausgewählt. Noch nicht gespeichert – bitte „Datei hochladen“ drücken.</>
+                          : "Nach der Auswahl bitte zusätzlich „Datei hochladen“ drücken."}
+                      </p>
                     </div>
                     <button
                       type="submit"
-                      disabled={uploadingReceiptId === cost.id || deletingReceiptId === cost.id || confirmingReceiptId === cost.id || pending}
+                      disabled={uploadingReceiptId === cost.id || deletingReceiptId === cost.id || confirmingReceiptId === cost.id || pending || selectedReceipt?.costId !== cost.id}
                       aria-busy={uploadingReceiptId === cost.id}
-                      className={`${buttonQuiet} min-h-11`}
+                      className={buttonPrimary}
                     >
-                      {uploadingReceiptId === cost.id
-                        ? cost.receipts.length > 0 ? "Datei wird ersetzt …" : "Datei wird hochgeladen …"
-                        : cost.receipts.length > 0 ? "Datei ersetzen" : "Datei hochladen"}
+                      {uploadingReceiptId === cost.id ? "Datei wird hochgeladen …" : "Datei hochladen"}
                     </button>
                     {receiptStatus?.costId === cost.id ? <p role="status" className="text-sm text-ink-muted sm:col-span-2">{receiptStatus.message}</p> : null}
                   </form>

@@ -95,6 +95,12 @@ export async function POST(request: Request, context: RouteContext) {
       { status: 409 },
     );
   }
+  if (cost.receipt_path) {
+    return NextResponse.json(
+      { detail: "Für diese Kostenposition ist bereits eine Datei gespeichert. Lösche sie zuerst, bevor du eine neue hochlädst." },
+      { status: 409 },
+    );
+  }
   const formData = await request.formData();
   const value = formData.get("receipt");
   if (!(value instanceof File) || value.size === 0) {
@@ -134,14 +140,7 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ detail: "Der Beleg konnte nicht verknüpft werden." }, { status: 502 });
   }
 
-  if (cost.receipt_path) {
-    const { error: removeOldError } = await supabase.storage.from("receipts").remove([cost.receipt_path]);
-    if (removeOldError) {
-      console.error("Der alte Beleg konnte nach dem Ersetzen nicht aus dem Storage entfernt werden.", removeOldError);
-    }
-  }
-
-  return NextResponse.json({ receiptPath: path, fileName, replaced: Boolean(cost.receipt_path) }, { status: 201 });
+  return NextResponse.json({ receiptPath: path, fileName }, { status: 201 });
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
