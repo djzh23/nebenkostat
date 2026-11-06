@@ -327,9 +327,10 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
                 <span className="font-sans text-xl font-bold">{settlement.cost.category}</span>
                 <span className="ml-3 text-sm text-ink-muted">{KEY_LABELS[settlement.cost.key]}</span>
               </span>
-              <span className="flex items-center gap-4">
+              <span className="flex items-center gap-3">
+                <span className="disclosure-icon" aria-hidden="true" />
                 <span className="font-mono text-lg font-semibold tabular-nums">{formatEur(settlement.cost.amountCents)}</span>
-                <span className="text-xs font-semibold underline decoration-ink/40 decoration-2 underline-offset-4">Rechenweg anzeigen</span>
+                <span className="hidden text-xs font-semibold underline decoration-ink/40 decoration-2 underline-offset-4 sm:inline">Rechenweg anzeigen</span>
               </span>
             </summary>
 

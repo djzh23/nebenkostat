@@ -47,6 +47,35 @@ body {
   outline-offset: 3px;
 }
 
+.disclosure-icon {
+  display: inline-flex;
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.disclosure-icon::before {
+  content: "+";
+}
+
+details[open] > summary .disclosure-icon {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+details[open] > summary .disclosure-icon::before {
+  content: "−";
+}
+
 /* Receipt: perforated top and bottom edges, drawn as desk-coloured bites. */
 .receipt {
   position: relative;

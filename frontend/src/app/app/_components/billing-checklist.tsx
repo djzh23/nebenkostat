@@ -17,7 +17,10 @@ export function BillingChecklist({ state, propertyId, year }: { state: AppState;
         {checklist.groups.map((group) => (
           <details key={group.id} className="border border-rule p-4">
             <summary className="flex cursor-pointer list-none items-start justify-between gap-3 font-semibold [&::-webkit-details-marker]:hidden">
-              <span>{group.label}</span>
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="disclosure-icon" aria-hidden="true" />
+                <span>{group.label}</span>
+              </span>
               <span
                 className={group.status === "ok" ? "font-mono text-xs font-semibold text-ink" : "font-mono text-xs font-semibold text-stamp-deep"}
                 aria-label={group.status === "ok" ? "geprüft" : "bitte prüfen"}
