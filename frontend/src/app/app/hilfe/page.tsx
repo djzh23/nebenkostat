@@ -33,7 +33,7 @@ const workflow = [
   {
     number: "04",
     title: "Kosten und Belege sammeln",
-    body: "Lege jede Rechnung als eigene Kostenposition an. Wähle Betrag und passenden Verteilungsschlüssel und lade den zugehörigen Beleg hoch.",
+    body: "Lege jede Rechnung als eigene Kostenposition an. Wähle Betrag und passenden Verteilungsschlüssel und lade den zugehörigen Beleg hoch. Vor dem Abschluss kannst du eine Datei öffnen, ersetzen oder löschen.",
     control: { label: "Kosten speichern", variant: "primary" as const, location: "am Ende des Kostenformulars" },
     expectation: "Die Kostenposition erscheint in der Liste. Fehlende Belege werden als offener Punkt markiert.",
   },

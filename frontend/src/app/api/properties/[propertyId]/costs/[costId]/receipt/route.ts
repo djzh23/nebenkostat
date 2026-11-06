@@ -95,10 +95,6 @@ export async function POST(request: Request, context: RouteContext) {
       { status: 409 },
     );
   }
-  if (cost.receipt_path) {
-    return NextResponse.json({ detail: "Für diese Kostenposition ist bereits ein Beleg gespeichert." }, { status: 409 });
-  }
-
   const formData = await request.formData();
   const value = formData.get("receipt");
   if (!(value instanceof File) || value.size === 0) {
@@ -138,5 +134,76 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ detail: "Der Beleg konnte nicht verknüpft werden." }, { status: 502 });
   }
 
-  return NextResponse.json({ receiptPath: path, fileName }, { status: 201 });
+  if (cost.receipt_path) {
+    const { error: removeOldError } = await supabase.storage.from("receipts").remove([cost.receipt_path]);
+    if (removeOldError) {
+      console.error("Der alte Beleg konnte nach dem Ersetzen nicht aus dem Storage entfernt werden.", removeOldError);
+    }
+  }
+
+  return NextResponse.json({ receiptPath: path, fileName, replaced: Boolean(cost.receipt_path) }, { status: 201 });
+}
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  const { propertyId, costId } = await context.params;
+  if (!/^[0-9a-f-]{36}$/i.test(propertyId) || !/^[0-9a-f-]{36}$/i.test(costId)) {
+    return NextResponse.json({ detail: "Ungültige ID." }, { status: 400 });
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return NextResponse.json({ detail: "Nicht angemeldet." }, { status: 401 });
+  }
+
+  const { data: cost, error: costError } = await supabase
+    .from("cost_items")
+    .select("id, receipt_path, billing_year")
+    .eq("id", costId)
+    .eq("property_id", propertyId)
+    .maybeSingle();
+
+  if (costError) {
+    console.error("Kostenposition konnte zum Löschen des Belegs nicht geladen werden.", costError);
+    return NextResponse.json({ detail: "Die Datei konnte nicht gelöscht werden." }, { status: 502 });
+  }
+  if (!cost) {
+    return NextResponse.json({ detail: "Kostenposition nicht gefunden." }, { status: 404 });
+  }
+  if (!cost.receipt_path) {
+    return NextResponse.json({ detail: "Für diese Kostenposition ist keine Datei gespeichert." }, { status: 404 });
+  }
+
+  const lock = await checkFinalizedStatement(supabase, propertyId, cost.billing_year);
+  if (lock.error) {
+    console.error("Abschlussstatus konnte vor dem Löschen des Belegs nicht geprüft werden.", lock.error);
+    return NextResponse.json({ detail: "Die Datei konnte nicht geprüft werden." }, { status: 502 });
+  }
+  if (lock.locked) {
+    return NextResponse.json(
+      { detail: `Die Abrechnung ${cost.billing_year} ist abgeschlossen. Dateien können nicht mehr geändert werden.` },
+      { status: 409 },
+    );
+  }
+
+  const { error: updateError } = await supabase
+    .from("cost_items")
+    .update({ receipt_path: null })
+    .eq("id", costId)
+    .eq("property_id", propertyId);
+
+  if (updateError) {
+    console.error("Dateipfad konnte nicht von der Kostenposition entfernt werden.", updateError);
+    return NextResponse.json({ detail: "Die Datei konnte nicht gelöscht werden." }, { status: 502 });
+  }
+
+  const { error: removeError } = await supabase.storage.from("receipts").remove([cost.receipt_path]);
+  if (removeError) {
+    console.error("Datei konnte nach dem Entfernen der Verknüpfung nicht aus dem Storage gelöscht werden.", removeError);
+  }
+
+  return NextResponse.json({ deleted: true });
 }

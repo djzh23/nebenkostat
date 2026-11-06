@@ -742,12 +742,13 @@ function CostsPanel({
   const { error, pending, runAsync } = useFormError();
   const [saved, setSaved] = useState(false);
   const [receiptError, setReceiptError] = useState<string | null>(null);
-  const [receiptSavedId, setReceiptSavedId] = useState<string | null>(null);
+  const [receiptStatus, setReceiptStatus] = useState<{ costId: string; message: string } | null>(null);
   const [openingReceiptId, setOpeningReceiptId] = useState<string | null>(null);
   const [receiptOpenError, setReceiptOpenError] = useState<string | null>(null);
   const [zipDownloading, setZipDownloading] = useState(false);
   const [zipError, setZipError] = useState<string | null>(null);
   const [uploadingReceiptId, setUploadingReceiptId] = useState<string | null>(null);
+  const [deletingReceiptId, setDeletingReceiptId] = useState<string | null>(null);
   const [deletingCostId, setDeletingCostId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<KeyType>("flaeche");
@@ -821,7 +822,7 @@ function CostsPanel({
     event.preventDefault();
     const form = event.currentTarget;
     setUploadingReceiptId(cost.id);
-    setReceiptSavedId(null);
+    setReceiptStatus(null);
     setReceiptError(null);
     try {
       const response = await fetch(`/api/properties/${propertyId}/costs/${cost.id}/receipt`, {
@@ -837,12 +838,37 @@ function CostsPanel({
       }
 
       upsertCost({ ...cost, receipts: [result.fileName] });
-      setReceiptSavedId(cost.id);
+      setReceiptStatus({
+        costId: cost.id,
+        message: cost.receipts.length > 0 ? "Datei ersetzt." : "Datei gespeichert.",
+      });
       form.reset();
     } catch (caught) {
       setReceiptError(caught instanceof Error ? caught.message : "Der Beleg konnte nicht gespeichert werden.");
     } finally {
       setUploadingReceiptId(null);
+    }
+  }
+
+  async function onDeleteReceipt(cost: AppState["costs"][number]) {
+    if (!window.confirm("Datei wirklich löschen? Die Kostenposition bleibt erhalten.")) return;
+
+    setDeletingReceiptId(cost.id);
+    setReceiptStatus(null);
+    setReceiptError(null);
+    try {
+      const response = await fetch(`/api/properties/${propertyId}/costs/${cost.id}/receipt`, { method: "DELETE" });
+      const result = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+      if (!response.ok) {
+        throw new Error(typeof result?.detail === "string" ? result.detail : "Die Datei konnte nicht gelöscht werden.");
+      }
+
+      upsertCost({ ...cost, receipts: [] });
+      setReceiptStatus({ costId: cost.id, message: "Datei gelöscht." });
+    } catch (caught) {
+      setReceiptError(caught instanceof Error ? caught.message : "Die Datei konnte nicht gelöscht werden.");
+    } finally {
+      setDeletingReceiptId(null);
     }
   }
 
@@ -948,14 +974,27 @@ function CostsPanel({
                     {cost.receipts.map((receipt, index) => (
                       <li key={`${receipt}-${index}`} className="flex flex-wrap items-center gap-x-4 gap-y-1">
                         <span>{receipt}</span>
-                        <button
-                          type="button"
-                          className={`${buttonQuiet} min-h-0 text-sm`}
-                          onClick={() => void onOpenReceipt(cost)}
-                          disabled={openingReceiptId === cost.id}
-                        >
-                          {openingReceiptId === cost.id ? "Wird geöffnet …" : "Datei öffnen"}
-                        </button>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                          <button
+                            type="button"
+                            className={`${buttonQuiet} min-h-0 text-sm`}
+                            onClick={() => void onOpenReceipt(cost)}
+                            disabled={openingReceiptId === cost.id || deletingReceiptId === cost.id}
+                          >
+                            {openingReceiptId === cost.id ? "Wird geöffnet …" : "Datei öffnen"}
+                          </button>
+                          {!locked ? (
+                            <button
+                              type="button"
+                              className={`${buttonQuiet} min-h-0 text-sm text-stamp-deep`}
+                              onClick={() => void onDeleteReceipt(cost)}
+                              disabled={deletingReceiptId === cost.id || openingReceiptId === cost.id}
+                              aria-busy={deletingReceiptId === cost.id}
+                            >
+                              {deletingReceiptId === cost.id ? "Wird gelöscht …" : "Datei löschen"}
+                            </button>
+                          ) : null}
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -975,13 +1014,15 @@ function CostsPanel({
                     </div>
                     <button
                       type="submit"
-                      disabled={uploadingReceiptId === cost.id || pending}
+                      disabled={uploadingReceiptId === cost.id || deletingReceiptId === cost.id || pending}
                       aria-busy={uploadingReceiptId === cost.id}
                       className={`${buttonQuiet} min-h-11`}
                     >
-                      {uploadingReceiptId === cost.id ? "Datei wird hochgeladen …" : "Datei hochladen"}
+                      {uploadingReceiptId === cost.id
+                        ? cost.receipts.length > 0 ? "Datei wird ersetzt …" : "Datei wird hochgeladen …"
+                        : cost.receipts.length > 0 ? "Datei ersetzen" : "Datei hochladen"}
                     </button>
-                    {receiptSavedId === cost.id ? <p role="status" className="text-sm text-ink-muted sm:col-span-2">Datei gespeichert.</p> : null}
+                    {receiptStatus?.costId === cost.id ? <p role="status" className="text-sm text-ink-muted sm:col-span-2">{receiptStatus.message}</p> : null}
                   </form>
                 )}
               </div>
