@@ -328,15 +328,15 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
                 <span className="ml-3 text-sm text-ink-muted">{KEY_LABELS[settlement.cost.key]}</span>
               </span>
               <span className="flex items-center gap-3">
-                <span className="disclosure-icon" aria-hidden="true" />
                 <span className="font-mono text-lg font-semibold tabular-nums">{formatEur(settlement.cost.amountCents)}</span>
                 <span className="hidden text-xs font-semibold underline decoration-ink/40 decoration-2 underline-offset-4 sm:inline">Rechenweg anzeigen</span>
+                <span className="disclosure-icon" aria-hidden="true" />
               </span>
             </summary>
 
             <p className="mt-4 border-l-2 border-stamp pl-4 text-sm leading-relaxed text-ink-muted">{settlement.rule}</p>
 
-            <div className="mt-5 overflow-x-auto">
+            <div className="mt-5 hidden overflow-x-auto sm:block print:block">
               <table className="w-full min-w-[32rem] text-left text-sm">
                 <thead>
                   <tr className="border-b border-ink font-mono text-xs uppercase tracking-wider text-ink-muted">
@@ -366,6 +366,30 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
                 </tbody>
               </table>
             </div>
+            <div className="mt-5 space-y-3 sm:hidden print:hidden">
+              {settlement.shares.map((share) => {
+                const tenancy = tenancyById.get(share.tenancyId);
+                return (
+                  <article key={share.tenancyId} className="border border-rule p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="font-semibold">{tenancy ? unitLabel.get(tenancy.unitId) : "–"}</p>
+                        <p className="text-sm text-ink-muted">{tenancy?.tenant ?? ""}</p>
+                      </div>
+                      <p className="shrink-0 font-mono font-semibold tabular-nums">{formatEur(share.cents)}</p>
+                    </div>
+                    <div className="mt-3 border-t border-dashed border-rule pt-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Rechenweg</p>
+                      <p className="mt-1 break-words font-mono text-xs leading-relaxed text-ink-muted">{share.formula}</p>
+                    </div>
+                  </article>
+                );
+              })}
+              <div className="flex items-center justify-between gap-4 border-t border-ink pt-3 font-semibold">
+                <span>Leerstand (Vermieter)</span>
+                <span className="shrink-0 font-mono tabular-nums">{formatEur(settlement.vacancyCents)}</span>
+              </div>
+            </div>
           </details>
         ))}
       </section>
@@ -381,7 +405,7 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
 
       <Panel>
         <SectionHeading note="Kosten minus angerechnete Vorauszahlungen laut Mietvertrag">Saldo je Mietpartei</SectionHeading>
-        <div className="print-table-wrap overflow-x-auto">
+        <div className="print-table-wrap hidden overflow-x-auto sm:block print:block">
           <table className="print-fit-table w-full min-w-[40rem] text-left text-sm">
             <thead>
               <tr className="border-b border-ink font-mono text-xs uppercase tracking-wider text-ink-muted">
@@ -435,6 +459,59 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
               })}
             </tbody>
           </table>
+        </div>
+        <div className="space-y-4 sm:hidden print:hidden">
+          {result.tenancies.map((row) => {
+            const balance = balanceLabel(row.balanceCents);
+            return (
+              <article key={row.tenancy.id} className="border border-rule p-4">
+                <div className="flex items-start justify-between gap-4 border-b border-dashed border-rule pb-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold">{row.unit.label}</p>
+                    <p className="text-sm">{row.tenancy.tenant}</p>
+                    <p className="text-xs text-ink-muted">
+                      {formatDateDe(row.tenancy.from)} – {row.tenancy.to ? formatDateDe(row.tenancy.to) : "laufend"}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="font-mono font-semibold tabular-nums">{formatEur(Math.abs(row.balanceCents))}</p>
+                    <Pill tone={balance.tone}>{balance.text}</Pill>
+                  </div>
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                  <div>
+                    <dt className="text-xs text-ink-muted">Tage</dt>
+                    <dd className="font-mono tabular-nums">{row.days}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-ink-muted">Kosten</dt>
+                    <dd className="font-mono tabular-nums">{formatEur(row.costCents)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-ink-muted">Angerechnet</dt>
+                    <dd className="font-mono tabular-nums">{formatEur(row.prepaidCents)}</dd>
+                    <dd className="text-xs text-ink-muted">{row.months} Monate</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-ink-muted">Saldo</dt>
+                    <dd className="font-mono font-semibold tabular-nums">{formatEur(Math.abs(row.balanceCents))}</dd>
+                  </div>
+                </dl>
+                <div data-no-print className="mt-4 border-t border-dashed border-rule pt-3 text-right">
+                  {finalized ? (
+                    <button
+                      type="button"
+                      onClick={() => void onDownloadTenantPdf(row.tenancy.id, row.unit.label)}
+                      disabled={tenantPdfId === row.tenancy.id}
+                      className="font-semibold underline decoration-ink/40 decoration-2 underline-offset-4 hover:decoration-stamp disabled:opacity-50"
+                    >
+                      {tenantPdfId === row.tenancy.id ? "Erzeuge …" : "Mieter-PDF laden"}
+                    </button>
+                  ) : <span className="text-xs text-ink-muted">PDF nach Abschluss verfügbar</span>}
+                </div>
+              </article>
+            );
+          })}
         </div>
       </Panel>
 
