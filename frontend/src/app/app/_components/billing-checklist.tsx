@@ -15,23 +15,23 @@ export function BillingChecklist({ state, propertyId, year }: { state: AppState;
       </SectionHeading>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {checklist.groups.map((group) => (
-          <section key={group.id} className="border border-rule p-4" aria-labelledby={`check-${group.id}`}>
-            <div className="flex items-start justify-between gap-3">
-              <h3 id={`check-${group.id}`} className="font-semibold">{group.label}</h3>
+          <details key={group.id} className="border border-rule p-4">
+            <summary className="flex cursor-pointer list-none items-start justify-between gap-3 font-semibold [&::-webkit-details-marker]:hidden">
+              <span>{group.label}</span>
               <span
                 className={group.status === "ok" ? "font-mono text-xs font-semibold text-ink" : "font-mono text-xs font-semibold text-stamp-deep"}
                 aria-label={group.status === "ok" ? "geprüft" : "bitte prüfen"}
               >
                 {group.status === "ok" ? "OK" : "PRÜFEN"}
               </span>
-            </div>
+            </summary>
             <p className="mt-3 text-sm leading-relaxed text-ink-muted">{group.summary}</p>
             {group.details.length > 0 ? (
               <ul className="mt-3 space-y-2 border-t border-dashed border-rule pt-3 text-xs text-stamp-deep">
                 {group.details.map((detail) => <li key={detail}>{detail}</li>)}
               </ul>
             ) : null}
-          </section>
+          </details>
         ))}
       </div>
       {!complete ? (

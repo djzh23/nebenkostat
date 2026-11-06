@@ -321,13 +321,16 @@ export function SettlementView({ propertyId, year }: { propertyId: string; year:
           Formel-Karten je Kostenposition
         </h2>
         {result.costs.map((settlement) => (
-          <details key={settlement.cost.id} className="receipt group px-5 py-6 sm:px-8" open>
+          <details key={settlement.cost.id} className="receipt group px-5 py-6 sm:px-8">
             <summary className="flex cursor-pointer list-none flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
               <span>
                 <span className="font-sans text-xl font-bold">{settlement.cost.category}</span>
                 <span className="ml-3 text-sm text-ink-muted">{KEY_LABELS[settlement.cost.key]}</span>
               </span>
-              <span className="font-mono text-lg font-semibold tabular-nums">{formatEur(settlement.cost.amountCents)}</span>
+              <span className="flex items-center gap-4">
+                <span className="font-mono text-lg font-semibold tabular-nums">{formatEur(settlement.cost.amountCents)}</span>
+                <span className="text-xs font-semibold underline decoration-ink/40 decoration-2 underline-offset-4">Rechenweg anzeigen</span>
+              </span>
             </summary>
 
             <p className="mt-4 border-l-2 border-stamp pl-4 text-sm leading-relaxed text-ink-muted">{settlement.rule}</p>

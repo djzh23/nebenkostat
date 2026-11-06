@@ -199,6 +199,15 @@ export function QuickstartForm() {
                 <label htmlFor="quickstart-city" className={fieldLabel}>Ort</label>
                 <input id="quickstart-city" name="city" autoComplete="address-level2" className={fieldText} />
               </div>
+              <div className="sm:col-span-2">
+                <span className={fieldLabel}>Abrechnungsjahr</span>
+                <div aria-label={`Abrechnungsjahr ${year}`} aria-readonly="true" className={`${fieldText} flex items-center bg-desk text-ink-muted`}>
+                  {year}
+                </div>
+                <p className="mt-2 text-xs leading-relaxed text-ink-muted">
+                  Dieses Jahr ist für den Schnellstart festgelegt. Die Abrechnung entsteht für das Vorjahr.
+                </p>
+              </div>
             </div>
           </section>
 
@@ -207,19 +216,19 @@ export function QuickstartForm() {
             <div className="grid gap-6 sm:grid-cols-2">
               <div>
                 <label htmlFor="quickstart-unit-one-label" className={fieldLabel}>Bezeichnung 1 <span className="text-stamp-deep">*</span></label>
-                <input id="quickstart-unit-one-label" name="unitOneLabel" required defaultValue="EG links" className={fieldText} />
+                <input id="quickstart-unit-one-label" name="unitOneLabel" required placeholder="z. B. EG links" className={fieldText} />
               </div>
               <div>
                 <label htmlFor="quickstart-unit-one-area" className={fieldLabel}>Wohnfläche in m² <span className="text-stamp-deep">*</span></label>
-                <input id="quickstart-unit-one-area" name="unitOneArea" required type="number" min="0.01" step="0.01" defaultValue="62" className={fieldInput} />
+                <input id="quickstart-unit-one-area" name="unitOneArea" required type="number" min="0.01" step="0.01" placeholder="z. B. 60" className={fieldInput} />
               </div>
               <div>
                 <label htmlFor="quickstart-unit-two-label" className={fieldLabel}>Bezeichnung 2 <span className="text-stamp-deep">*</span></label>
-                <input id="quickstart-unit-two-label" name="unitTwoLabel" required defaultValue="OG rechts" className={fieldText} />
+                <input id="quickstart-unit-two-label" name="unitTwoLabel" required placeholder="z. B. OG rechts" className={fieldText} />
               </div>
               <div>
                 <label htmlFor="quickstart-unit-two-area" className={fieldLabel}>Wohnfläche in m² <span className="text-stamp-deep">*</span></label>
-                <input id="quickstart-unit-two-area" name="unitTwoArea" required type="number" min="0.01" step="0.01" defaultValue="118" className={fieldInput} />
+                <input id="quickstart-unit-two-area" name="unitTwoArea" required type="number" min="0.01" step="0.01" placeholder="z. B. 40" className={fieldInput} />
               </div>
             </div>
           </section>
@@ -229,7 +238,8 @@ export function QuickstartForm() {
             <div className="grid gap-6 sm:grid-cols-2">
               <div>
                 <label htmlFor="quickstart-category" className={fieldLabel}>Kostenart <span className="text-stamp-deep">*</span></label>
-                <select id="quickstart-category" name="category" defaultValue="Wasser" className={fieldText}>
+                <select id="quickstart-category" name="category" defaultValue="" required className={fieldText}>
+                  <option value="">Bitte auswählen</option>
                   <option>Wasser</option>
                   <option>Müll</option>
                   <option>Grundsteuer</option>
