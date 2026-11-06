@@ -1028,9 +1028,17 @@ function CostsPanel({
                   </ul>
                 )}
                 {locked || cost.receipts.length > 0 ? null : (
-                  <form onSubmit={(event) => void onReceipt(event, cost)} className="mt-4 grid gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                    <div className="min-w-0">
-                      <label htmlFor={`receipt-${cost.id}`} className={fieldLabel}>Datei auswählen</label>
+                  <form onSubmit={(event) => void onReceipt(event, cost)} className="mt-4 space-y-2">
+                    <label htmlFor={`receipt-${cost.id}`} className={fieldLabel}>Datei auswählen</label>
+                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                      <label
+                        htmlFor={`receipt-${cost.id}`}
+                        className="flex min-h-11 min-w-0 cursor-pointer items-center border border-ink/40 bg-paper px-3 text-base text-ink transition-colors hover:border-ink focus-within:border-ink"
+                      >
+                        <span className="truncate font-sans">
+                          {selectedReceipt?.costId === cost.id ? selectedReceipt.name : "Datei auswählen"}
+                        </span>
+                      </label>
                       <input
                         id={`receipt-${cost.id}`}
                         name="receipt"
@@ -1043,24 +1051,24 @@ function CostsPanel({
                           setReceiptStatus(null);
                           setReceiptError(null);
                         }}
-                        className={`${fieldText} file:mr-3 file:border-0 file:bg-ink file:px-3 file:py-1.5 file:font-sans file:font-semibold file:text-paper`}
+                        className="sr-only"
                         accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
                       />
-                      <p id={`receipt-help-${cost.id}`} className="mt-2 text-xs leading-relaxed text-ink-muted">
-                        {selectedReceipt?.costId === cost.id
-                          ? <><span className="font-semibold">{selectedReceipt.name}</span> ausgewählt. Noch nicht gespeichert – bitte „Datei hochladen“ drücken.</>
-                          : "Nach der Auswahl bitte zusätzlich „Datei hochladen“ drücken."}
-                      </p>
-                    </div>
                     <button
                       type="submit"
                       disabled={uploadingReceiptId === cost.id || deletingReceiptId === cost.id || confirmingReceiptId === cost.id || pending || selectedReceipt?.costId !== cost.id}
                       aria-busy={uploadingReceiptId === cost.id}
-                      className={buttonPrimary}
+                      className={`${buttonPrimary} w-full sm:w-auto`}
                     >
                       {uploadingReceiptId === cost.id ? "Datei wird hochgeladen …" : "Datei hochladen"}
                     </button>
-                    {receiptStatus?.costId === cost.id ? <p role="status" className="text-sm text-ink-muted sm:col-span-2">{receiptStatus.message}</p> : null}
+                    </div>
+                    <p id={`receipt-help-${cost.id}`} className="text-xs leading-relaxed text-ink-muted">
+                      {selectedReceipt?.costId === cost.id
+                        ? <><span className="font-semibold">{selectedReceipt.name}</span> ausgewählt. Noch nicht gespeichert – bitte „Datei hochladen“ drücken.</>
+                        : "Datei auswählen und danach „Datei hochladen“ drücken."}
+                    </p>
+                    {receiptStatus?.costId === cost.id ? <p role="status" className="text-sm text-ink-muted">{receiptStatus.message}</p> : null}
                   </form>
                 )}
               </div>
