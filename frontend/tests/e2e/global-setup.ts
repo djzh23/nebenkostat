@@ -65,7 +65,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     }
     const hashedToken = link.data.properties.hashed_token;
     actionLink = hashedToken
-      ? `${baseURL}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=email`
+      ? `${baseURL}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=magiclink`
       : link.data.properties.action_link;
   }
 
@@ -87,6 +87,11 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   try {
     await page.goto(actionLink, { waitUntil: "domcontentloaded" });
     await page.waitForURL((url) => url.pathname.startsWith("/app"), { timeout: 60_000 });
+    await page.getByRole("heading", { name: "Übersicht", exact: true }).waitFor({ timeout: 15_000 });
+    const sessionCheck = await page.request.get(new URL("/api/properties", baseURL).toString());
+    if (sessionCheck.status() !== 200) {
+      throw new Error(`Die erzeugte E2E-Session wird von /api/properties abgelehnt (HTTP ${sessionCheck.status()}).`);
+    }
     await context.storageState({ path: statePath });
   } catch (error) {
     throw new Error(`E2E-Login konnte nicht abgeschlossen werden. Aktuelle URL: ${page.url()}. ${String(error)}`);
