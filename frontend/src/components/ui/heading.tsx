@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 
 export function PageTitle({ children, id }: { children: ReactNode; id?: string }) {
   return (
-    <h1 id={id} className="font-sans text-[clamp(2.25rem,4vw,3.5rem)] font-black leading-[0.98] tracking-[-0.035em] text-balance">
+    <h1 id={id} className="break-words font-sans text-[clamp(2.25rem,4vw,3.5rem)] font-black leading-[0.98] tracking-[-0.035em] text-balance">
       {children}
     </h1>
   );
@@ -13,7 +13,7 @@ export function PageTitle({ children, id }: { children: ReactNode; id?: string }
 
 export function SectionTitle({ children, id }: { children: ReactNode; id?: string }) {
   return (
-    <h2 id={id} className="font-sans text-[clamp(2rem,3.6vw,3.25rem)] font-extrabold leading-[1.02] tracking-[-0.03em] text-balance">
+    <h2 id={id} className="break-words font-sans text-[clamp(2rem,3.6vw,3.25rem)] font-extrabold leading-[1.02] tracking-[-0.03em] text-balance">
       {children}
     </h2>
   );

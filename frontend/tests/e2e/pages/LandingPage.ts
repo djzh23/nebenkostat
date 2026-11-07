@@ -7,21 +7,32 @@ export class LandingPage {
 
   async goto(): Promise<void> {
     await this.page.goto("/");
-    await expect(this.page.getByText("Nebenkosten, die du selbst nachrechnen kannst.", { exact: false })).toBeVisible();
+    await expect(this.page.getByText("Deine Nebenkostenabrechnung.", { exact: false })).toBeVisible();
   }
 
   async expectCoreElements(): Promise<void> {
     await expect(this.page.locator("a").filter({ hasText: "Anmelden" }).first()).toBeVisible();
-    const examplePdfLink = this.page.getByText("Beispiel-PDF ansehen", { exact: true });
+    const examplePdfLink = this.page.getByText("Beispielabrechnung als PDF ansehen", { exact: true });
     await expect(examplePdfLink).toBeVisible();
     await expect(examplePdfLink).toHaveAttribute("href", "/beispiel-pdf");
     await expect(this.page.getByRole("contentinfo")).toBeVisible();
   }
 
   async expectMarketingContent(): Promise<void> {
-    await expect(this.page.getByText("Vom Beleg bis zur fertigen Abrechnung.", { exact: false })).toBeVisible();
-    await expect(this.page.getByText("Drei Verteilungen, jede mit Rechenweg.", { exact: false })).toBeVisible();
-    await expect(this.page.getByText("Nebenkostat rechnet und archiviert.", { exact: false })).toBeVisible();
+    await expect(this.page.getByText("Weniger Tabellenarbeit. Mehr Überblick.", { exact: false })).toBeVisible();
+    await expect(this.page.getByText("Wie werden die Kosten verteilt?", { exact: false })).toBeVisible();
+    await expect(this.page.getByText("Nebenkostat rechnet. Du behältst den Überblick.", { exact: false })).toBeVisible();
+  }
+
+  async toggleDistributionDetails(): Promise<void> {
+    const details = this.page.locator("details").filter({ hasText: "Die drei Verteilungsschlüssel" });
+    const summary = details.locator("summary");
+
+    await expect(details.getByText("Flächenschlüssel", { exact: true })).toBeHidden();
+    await summary.click();
+    await expect(details.getByText("Flächenschlüssel", { exact: true })).toBeVisible();
+    await summary.click();
+    await expect(details.getByText("Flächenschlüssel", { exact: true })).toBeHidden();
   }
 
   async clickAnmelden(): Promise<void> {

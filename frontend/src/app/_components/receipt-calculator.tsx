@@ -4,7 +4,7 @@ import { useId, useState, type CSSProperties } from "react";
 import { allocateByArea, formatEur, formatM2, parseEuroToCents, parseM2 } from "@/lib/allocation";
 import { Receipt } from "@/components/ui/receipt";
 
-const COST_TYPES = ["Wasser", "Müll", "Heizung", "Grundsteuer", "Versicherung"] as const;
+const COST_TYPES = ["Wasser", "Müll", "Grundsteuer", "Versicherung"] as const;
 type CostType = (typeof COST_TYPES)[number];
 
 // Each line prints in sequence on first render (see `.print-line` in globals.css).
@@ -50,7 +50,7 @@ export function ReceiptCalculator() {
       <header className="flex items-start justify-between gap-4 border-b border-ink pb-4">
         <div>
           <p className="text-sm font-semibold tracking-tight">Nebenkostat</p>
-          <p className="font-mono text-xs text-ink-muted">Beleg, Umlage</p>
+          <p className="font-mono text-xs text-ink-muted">Beispielrechnung</p>
         </div>
         <span className="border-2 border-stamp px-2 py-0.5 font-mono text-xs font-semibold uppercase tracking-widest text-stamp">
           Beispiel
@@ -75,7 +75,7 @@ export function ReceiptCalculator() {
         </div>
 
         <div className={row} style={printDelay(1)}>
-          <label htmlFor={costId} className={rowLabel}>Betrag gesamt</label>
+          <label htmlFor={costId} className={rowLabel}>Gesamtkosten</label>
           <span className="flex items-baseline gap-1">
             <input
               id={costId}
@@ -91,7 +91,7 @@ export function ReceiptCalculator() {
         </div>
 
         <div className={row} style={printDelay(2)}>
-          <label htmlFor={unitId} className={rowLabel}>Wohnfläche</label>
+          <label htmlFor={unitId} className={rowLabel}>Wohnfläche der Wohnung</label>
           <span className="flex items-baseline gap-1">
             <input
               id={unitId}
@@ -106,7 +106,7 @@ export function ReceiptCalculator() {
         </div>
 
         <div className={row} style={printDelay(3)}>
-          <label htmlFor={totalId} className={rowLabel}>Gesamtfläche</label>
+          <label htmlFor={totalId} className={rowLabel}>Gesamtfläche des Objekts</label>
           <span className="flex items-baseline gap-1">
             <input
               id={totalId}
@@ -133,14 +133,14 @@ export function ReceiptCalculator() {
             </p>
 
             <div className="print-line mt-4 flex items-end justify-between gap-4 border-y-2 border-ink py-4" style={printDelay(5)}>
-              <span className="whitespace-nowrap text-lg font-bold">Anteil</span>
+              <span className="whitespace-nowrap text-lg font-bold">Anteil der Wohnung</span>
               <span className="text-4xl font-extrabold tabular-nums tracking-tight text-stamp">
                 {formatEur(result.shareCents)}
               </span>
             </div>
 
             <div className="print-line flex items-baseline justify-between gap-4 py-3 text-sm" style={printDelay(6)}>
-              <span className="text-ink-muted">Übrige Einheiten und Leerstand</span>
+              <span className="text-ink-muted">Restbetrag für übrige Flächen</span>
               <span className="font-mono tabular-nums">{formatEur(result.restCents)}</span>
             </div>
           </>
@@ -148,7 +148,7 @@ export function ReceiptCalculator() {
       </div>
 
       <p className="mt-6 border-t border-dashed border-rule pt-4 text-xs leading-relaxed text-ink-muted">
-        Kaufmännisch auf Cent gerundet. Die Rundungsdifferenz geht in die Restzeile, damit die Summe stimmt.
+        Auf Cent gerundet. Der Restbetrag wird so angepasst, dass die Gesamtsumme stimmt.
       </p>
     </Receipt>
   );

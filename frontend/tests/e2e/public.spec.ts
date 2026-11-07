@@ -19,6 +19,13 @@ test.describe("öffentliche Landingpage", () => {
     await landingPage.clickAnmelden();
   });
 
+  test("öffnet und schließt die Verteilungsschlüssel-Erklärung", async ({ page }) => {
+    const landingPage = new LandingPage(page);
+
+    await landingPage.goto();
+    await landingPage.toggleDistributionDetails();
+  });
+
   test("schützt den App-Bereich ohne Anmeldung", async ({ page }) => {
     const dashboardPage = new AppDashboardPage(page);
 

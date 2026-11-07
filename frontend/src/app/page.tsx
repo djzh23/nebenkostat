@@ -5,17 +5,16 @@ import { Receipt } from "@/components/ui/receipt";
 import { Container, Section, SplitSection } from "@/components/ui/layout";
 import { PageTitle, SectionTitle } from "@/components/ui/heading";
 
-const problemRows = [
-  ["Belege in Ordnern, Fotos auf dem Handy", "Belegarchiv pro Objekt und Jahr"],
-  ["Formeln in Zellen, schwer nachzuprüfen", "Formel-Karte mit jedem Rechenschritt"],
-  ["Zeitanteile bei Mieterwechsel von Hand", "Zeitanteil je Mietverhältnis berechnet"],
-  ["Tabelle, die man erklären muss", "PDF-Abrechnung mit Prüfhinweis"],
+const benefits = [
+  ["Rechenwege nachvollziehen", "Sieh bei jeder Umlage, wie sich der Anteil zusammensetzt."],
+  ["Mietzeiträume berücksichtigen", "Nebenkostat berücksichtigt hinterlegte Mietzeiträume bei der Verteilung."],
+  ["Belege zusammenhalten", "Sammle Belege je Objekt und Abrechnungsjahr. Lade sie bei Bedarf als ZIP herunter."],
 ] as const;
 
 const steps = [
-  ["Objekt anlegen", "Name ist Pflicht, Adresse optional."],
-  ["Einheiten anlegen", "Bezeichnung und Wohnfläche in m²."],
-  ["Kosten erfassen", "Kostenart, Betrag und Verteilungsschlüssel."],
+  ["Objekt und Wohnungen anlegen", "Trage Objekt, Wohnungen und Wohnflächen ein."],
+  ["Mietverhältnisse, Kosten und Belege erfassen", "Hinterlege Mietzeiträume, Kostenpositionen, Schlüssel und Nachweise."],
+  ["Prüfen und als PDF herunterladen", "Sieh dir Rechenwege und Salden an, bevor du die Abrechnung abschließt."],
 ] as const;
 
 const keys = [
@@ -26,11 +25,10 @@ const keys = [
 
 const freeFeatures = [
   "1 Objekt mit bis zu 5 Wohneinheiten",
-  "Kostenpositionen; Belege bis 10 MB pro Datei",
+  "Kostenpositionen; Belege bis 10 MB je Datei",
   "Abrechnung berechnen und als PDF exportieren",
   "Belegarchiv als ZIP exportieren",
 ];
-
 
 const disclaimer = "Erstellt mit Nebenkostat · Angaben bitte vor dem Versand prüfen.";
 
@@ -43,9 +41,9 @@ export default function Home() {
             Nebenkostat
           </a>
           <nav aria-label="Hauptnavigation" className="hidden items-center gap-8 text-sm font-medium md:flex">
-            <a href="#ablauf" className="underline-offset-4 hover:underline">So funktioniert’s</a>
-            <a href="#preise" className="underline-offset-4 hover:underline">Preise</a>
-            <a href="#rechtshinweis" className="underline-offset-4 hover:underline">Rechtshinweis</a>
+            <a href="#ablauf" className="underline-offset-4 hover:underline">So funktioniert&apos;s</a>
+            <a href="#beta" className="underline-offset-4 hover:underline">Kostenlose Beta</a>
+            <a href="#hinweise" className="underline-offset-4 hover:underline">Hinweise</a>
           </nav>
           <ButtonLink href="/login" variant="quiet" size="sm">
             Anmelden
@@ -56,20 +54,20 @@ export default function Home() {
       <main id="top">
         <Container className="grid gap-14 pt-12 pb-20 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:pt-20 lg:pb-28">
           <div className="min-w-0 max-w-2xl">
-            <PageTitle>Nebenkosten, die du selbst nachrechnen kannst.</PageTitle>
+            <PageTitle>Deine Nebenkostenabrechnung. Mit Rechenweg statt Excel-Formeln.</PageTitle>
             <p className="mt-7 max-w-xl text-lg leading-relaxed text-ink-muted md:text-xl">
-              Für private Vermieter mit 2 bis 5 Wohneinheiten: Kosten verteilen, Belege je Objekt sammeln und eine
-              nachvollziehbare Abrechnung als PDF ausgeben.
+              Für private Vermieter mit 2 bis 5 Wohnungen: Kosten verteilen, Belege sammeln und die Abrechnung als PDF
+              herunterladen.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-5">
               <ButtonLink href="/login" className="md:min-w-52">
                 Kostenlos starten
               </ButtonLink>
-              <CalculatorCta>
-                Rechenweg ansehen
-              </CalculatorCta>
+              <CalculatorCta>Beispielrechnung ansehen</CalculatorCta>
             </div>
-            <p className="mt-6 text-sm text-ink-muted">1 Objekt mit bis zu 5 Einheiten kostenlos.</p>
+            <p className="mt-6 text-sm text-ink-muted">
+              Während der Beta kostenlos: 1 Objekt mit bis zu 5 Wohnungen. Keine Zahlungsdaten.
+            </p>
           </div>
 
           <div id="rechner" className="flex min-w-0 w-full justify-center overflow-hidden scroll-mt-8 lg:justify-end">
@@ -79,19 +77,13 @@ export default function Home() {
 
         <Section divided>
           <Container>
-            <SplitSection
-              heading={<SectionTitle>Vom Beleg bis zur fertigen Abrechnung.</SectionTitle>}
-            >
+            <SplitSection heading={<SectionTitle>Weniger Tabellenarbeit. Mehr Überblick.</SectionTitle>}>
               <Receipt padding="md">
-                <div className="grid grid-cols-2 gap-6 border-b border-ink pb-3 font-mono text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                  <span>Excel heute</span>
-                  <span className="text-ink">Nebenkostat</span>
-                </div>
                 <ul>
-                  {problemRows.map(([before, after]) => (
-                    <li key={before} className="grid grid-cols-2 gap-6 border-b border-dashed border-rule py-4 text-base">
-                      <span className="text-ink-muted">{before}</span>
-                      <span className="font-medium">{after}</span>
+                  {benefits.map(([title, detail]) => (
+                    <li key={title} className="border-b border-dashed border-rule py-5 last:border-b-0">
+                      <p className="font-sans text-lg font-bold">{title}</p>
+                      <p className="mt-2 leading-relaxed text-ink-muted">{detail}</p>
                     </li>
                   ))}
                 </ul>
@@ -102,7 +94,7 @@ export default function Home() {
 
         <Section id="ablauf" divided>
           <Container>
-            <SplitSection heading={<SectionTitle>Der erste Rechenweg entsteht in drei Eingaben.</SectionTitle>}>
+            <SplitSection heading={<SectionTitle>So entsteht deine Abrechnung.</SectionTitle>}>
               <Receipt padding="md">
                 <ol>
                   {steps.map(([title, detail], index) => (
@@ -115,7 +107,7 @@ export default function Home() {
                     </li>
                   ))}
                 </ol>
-                <p className="mt-6 font-medium">Danach erscheint die Formel-Karte sofort, mit jedem Rechenschritt.</p>
+                <p className="mt-6 font-medium">Prüfe jeden Rechenschritt, bevor du die Abrechnung als PDF herunterlädst.</p>
               </Receipt>
             </SplitSection>
           </Container>
@@ -123,19 +115,17 @@ export default function Home() {
 
         <Section divided>
           <Container>
-            <SplitSection
-              heading={
-                <>
-                  <SectionTitle>Drei Verteilungen, jede mit Rechenweg.</SectionTitle>
-                  <p className="mt-6 max-w-md text-lg leading-relaxed text-ink-muted">
-                    Der Nenner bleibt fix, damit Leerstand sichtbar bleibt. Was nicht zugeordnet ist, steht als eigene Zeile
-                    auf der Abrechnung.
-                  </p>
-                </>
-              }
-            >
-              <Receipt padding="md">
-                <dl>
+            <SplitSection heading={<SectionTitle>Wie werden die Kosten verteilt?</SectionTitle>}>
+              <Receipt as="details" padding="md">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-sans text-lg font-bold [&::-webkit-details-marker]:hidden">
+                  <span>Die drei Verteilungsschlüssel</span>
+                  <span className="disclosure-icon" aria-hidden="true" />
+                </summary>
+                <p className="mt-6 max-w-2xl leading-relaxed text-ink-muted">
+                  Je nach Kostenposition kannst du nach Wohnfläche, Personen oder Wohnungen verteilen. Nebenkostat zeigt
+                  den verwendeten Rechenweg und weist nicht zugeordnete Anteile gesondert aus.
+                </p>
+                <dl className="mt-5">
                   {keys.map(([key, formula]) => (
                     <div key={key} className="border-b border-dashed border-rule py-5 last:border-b-0">
                       <dt className="font-sans text-lg font-bold">{key}</dt>
@@ -143,59 +133,56 @@ export default function Home() {
                     </div>
                   ))}
                 </dl>
+                <p className="mt-5 text-sm leading-relaxed text-ink-muted">
+                  Welcher Schlüssel für deine Abrechnung passt, prüfst du anhand deiner Unterlagen.
+                </p>
               </Receipt>
             </SplitSection>
           </Container>
         </Section>
 
-        <Section id="preise" divided>
+        <Section id="beta" divided>
           <Container>
-            <SectionTitle>Beta-Start: kostenlos und mit echtem Rechenweg.</SectionTitle>
-            <div className="mt-14 grid gap-8 md:grid-cols-2">
+            <SectionTitle>Kostenlos starten und ausprobieren.</SectionTitle>
+            <div className="mt-14 max-w-3xl">
               <Receipt padding="lg" className="flex flex-col">
                 <p className="font-sans text-lg font-bold">Kostenlose Beta</p>
-                <p className="mt-3 font-mono text-5xl font-semibold tabular-nums tracking-tight">0 €</p>
+                <p className="mt-3 font-mono text-5xl font-semibold tabular-nums tracking-tight">0 € während der Beta</p>
                 <ul className="mt-8 flex-1 space-y-3 border-t border-dashed border-rule pt-6 text-base">
                   {freeFeatures.map((feature) => (
-                    <li key={feature}>{feature}</li>
+                    <li key={feature} className="flex gap-3">
+                      <span className="font-mono text-stamp" aria-hidden="true">+</span>
+                      <span>{feature}</span>
+                    </li>
                   ))}
                 </ul>
-                <ButtonLink href="/beispiel-pdf" variant="quiet" className="mt-10 w-fit">
-                  Beispiel-PDF ansehen
-                </ButtonLink>
-              </Receipt>
-
-              <Receipt padding="lg" tone="outline" className="flex flex-col">
-                <p className="font-sans text-lg font-bold">Frühzugang</p>
-                <p className="mt-3 font-sans text-3xl font-black tracking-tight text-stamp">Mitgestalten</p>
-                <p className="mt-3 text-base leading-relaxed text-ink-muted">
-                  Hilf uns mit echtem Feedback. Bevor eine Bezahlversion startet, kündigen wir Preis und Umfang
-                  transparent an. Frühe Tester erhalten ein günstiges Einführungsangebot.
+                <p className="mt-8 border-t border-dashed border-rule pt-6 text-base leading-relaxed">
+                  Keine Zahlungsdaten. Keine automatische Umstellung auf ein Bezahlpaket. Preis und Umfang einer späteren
+                  Bezahlversion kündigen wir vorher an.
                 </p>
-                <p className="mt-8 border-t border-dashed border-rule pt-6 text-base">
-                  Keine Zahlungsdaten. Keine automatische Verlängerung. Export und deine Daten bleiben zugänglich.
-                </p>
+                <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-5">
+                  <ButtonLink href="/login">Kostenlos starten</ButtonLink>
+                  <ButtonLink href="/beispiel-pdf" variant="quiet">Beispielabrechnung als PDF ansehen</ButtonLink>
+                </div>
               </Receipt>
             </div>
-            <p className="mt-8 max-w-2xl text-sm leading-relaxed text-ink-muted">
-              Die Beta begrenzt den Start auf 1 Objekt und insgesamt 5 Wohneinheiten. Diese Grenze schützt den Betrieb,
-              ohne Berechnung, PDF-Export oder Belegarchiv künstlich zu sperren.
-            </p>
           </Container>
         </Section>
 
-        <Section id="rechtshinweis" divided>
+        <Section id="hinweise" divided>
           <Container>
-            <SplitSection heading={<SectionTitle>Nebenkostat rechnet und archiviert. Die Prüfung bleibt bei dir.</SectionTitle>}>
+            <SplitSection heading={<SectionTitle>Nebenkostat rechnet. Du behältst den Überblick.</SectionTitle>}>
               <div className="space-y-5 text-lg leading-relaxed text-ink-muted">
-                <p>Das Tool ersetzt keine Rechtsberatung. Jede PDF-Abrechnung trägt diesen Hinweis:</p>
-                <p className="border-l-2 border-stamp pl-5 font-medium text-ink">„{disclaimer}“</p>
-                <p>Die Abrechnungsfrist zeigt die App als Orientierung. Sie ist keine Rechtsauskunft.</p>
+                <p>
+                  Die App berechnet mit deinen Angaben und dem gewählten Verteilungsschlüssel. Prüfe vor dem Versand, ob
+                  Kosten, Mietzeiträume und Schlüssel zu deinen Unterlagen passen.
+                </p>
+                <p className="font-medium text-ink">Nebenkostat ersetzt keine Rechtsberatung.</p>
+                <p className="border-l border-stamp pl-5 font-medium text-ink">„{disclaimer}“</p>
               </div>
             </SplitSection>
           </Container>
         </Section>
-
       </main>
 
       <footer className="border-t border-ink/20">
