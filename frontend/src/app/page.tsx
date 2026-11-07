@@ -150,10 +150,7 @@ export default function Home() {
                 <p className="mt-3 font-mono text-5xl font-semibold tabular-nums tracking-tight">0 € während der Beta</p>
                 <ul className="mt-8 flex-1 space-y-3 border-t border-dashed border-rule pt-6 text-base">
                   {freeFeatures.map((feature) => (
-                    <li key={feature} className="flex gap-3">
-                      <span className="font-mono text-stamp" aria-hidden="true">+</span>
-                      <span>{feature}</span>
-                    </li>
+                    <li key={feature}>{feature}</li>
                   ))}
                 </ul>
                 <p className="mt-8 border-t border-dashed border-rule pt-6 text-base leading-relaxed">
