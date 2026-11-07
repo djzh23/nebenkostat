@@ -15,7 +15,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   const statePath = resolvePath(process.env.E2E_STORAGE_STATE ?? "playwright/.auth/user.json");
   const markerPath = resolvePath(process.env.E2E_AUTH_MARKER ?? "playwright/.auth/ready");
   const metadataPath = resolvePath("playwright/.auth/metadata.json");
-  const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? process.env.BASE_URL ?? config.projects[0]?.use.baseURL ?? "http://127.0.0.1:3100";
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? process.env.BASE_URL ?? config.projects[0]?.use.baseURL ?? "http://localhost:3100";
   await fs.mkdir(path.dirname(statePath), { recursive: true });
   await assertNebenkostatTarget(baseURL);
   console.log(`[Playwright] Nebenkostat-Testziel bestätigt: ${baseURL}`);

@@ -5,7 +5,7 @@ import { stdin as input, stdout as output } from "node:process";
 
 import { chromium } from "@playwright/test";
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3100";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3100";
 const statePath = path.resolve(process.env.E2E_STORAGE_STATE ?? "playwright/.auth/user.json");
 const markerPath = path.resolve(process.env.E2E_AUTH_MARKER ?? "playwright/.auth/ready");
 

@@ -4,7 +4,7 @@ import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
 const defaultLocalPort = process.env.PLAYWRIGHT_PORT ?? "3100";
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? process.env.BASE_URL ?? `http://127.0.0.1:${defaultLocalPort}`;
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? process.env.BASE_URL ?? `http://localhost:${defaultLocalPort}`;
 const authStatePath = path.resolve(process.env.E2E_STORAGE_STATE ?? "playwright/.auth/user.json");
 const localBaseUrl = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(baseURL);
 const localPort = new URL(baseURL).port || defaultLocalPort;
