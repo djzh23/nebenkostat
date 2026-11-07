@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
-import { formatEur, formatM2 } from "@/lib/allocation";
+import { formatEur, formatM2, parseEuroToCents } from "@/lib/allocation";
 import {
   deleteCost,
   DomainError,
@@ -773,13 +773,17 @@ function CostsPanel({
     setSaved(false);
     const savedOk = await runAsync(async () => {
       const submittedKey = String(data.get("key") ?? "flaeche") as KeyType;
+      const amountCents = parseEuroToCents(String(data.get("amount") ?? ""));
+      if (amountCents === null || amountCents <= 0) {
+        throw new Error("Der Betrag muss größer als 0 € sein.");
+      }
       const response = await fetch(editing ? `/api/properties/${propertyId}/costs/${editing.id}` : `/api/properties/${propertyId}/costs`, {
         method: editing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           billingYear: year,
           category: String(data.get("category") ?? COST_CATEGORIES[0]),
-          amountEur: String(data.get("amount") ?? "").replace(",", "."),
+          amountEur: amountCents / 100,
           distributionKey: submittedKey,
           directTenancyId: String(data.get("directTenancyId") ?? ""),
         }),
@@ -840,9 +844,9 @@ function CostsPanel({
       }
 
       upsertCost({ ...cost, receipts: [result.fileName] });
-      setReceiptStatus({ costId: cost.id, message: "Datei gespeichert." });
       setSelectedReceipt(null);
       form.reset();
+      setReceiptStatus({ costId: cost.id, message: "Datei gespeichert." });
     } catch (caught) {
       setReceiptError(caught instanceof Error ? caught.message : "Der Beleg konnte nicht gespeichert werden.");
     } finally {
@@ -1068,9 +1072,11 @@ function CostsPanel({
                         ? <><span className="font-semibold">{selectedReceipt.name}</span> ausgewählt. Noch nicht gespeichert – bitte „Datei hochladen“ drücken.</>
                         : "Datei auswählen und danach „Datei hochladen“ drücken."}
                     </p>
-                    {receiptStatus?.costId === cost.id ? <p role="status" className="text-sm text-ink-muted">{receiptStatus.message}</p> : null}
                   </form>
                 )}
+                {receiptStatus?.costId === cost.id ? (
+                  <p role="status" className="mt-3 text-sm text-ink-muted">{receiptStatus.message}</p>
+                ) : null}
               </div>
             </li>
           ))}
