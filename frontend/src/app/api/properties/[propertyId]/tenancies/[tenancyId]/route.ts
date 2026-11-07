@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isValidIsoDate } from "@/lib/domain/dates";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedContext } from "@/lib/supabase/server";
 import { checkFinalizedStatement } from "@/lib/supabase/statement-lock";
 
 type RouteContext = { params: Promise<{ propertyId: string; tenancyId: string }> };
@@ -15,8 +15,7 @@ function text(record: Record<string, unknown>, key: string, max: number): string
 export async function PATCH(request: Request, context: RouteContext) {
   const { propertyId, tenancyId } = await context.params;
   if (!uuid.test(propertyId) || !uuid.test(tenancyId)) return NextResponse.json({ detail: "Ungültige ID." }, { status: 400 });
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const { supabase, user, error: userError } = await getAuthenticatedContext();
   if (userError || !user) return NextResponse.json({ detail: "Nicht angemeldet." }, { status: 401 });
   const lock = await checkFinalizedStatement(supabase, propertyId);
   if (lock.error) return NextResponse.json({ detail: "Das Mietverhältnis konnte nicht geprüft werden." }, { status: 502 });

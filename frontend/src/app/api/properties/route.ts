@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import { checkPropertyCreationLimit } from "@/lib/supabase/entitlements";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedContext } from "@/lib/supabase/server";
 
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const { supabase, user, error: userError } = await getAuthenticatedContext();
 
   if (userError || !user) {
     return NextResponse.json({ detail: "Nicht angemeldet." }, { status: 401 });
@@ -27,11 +23,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const { supabase, user, error: userError } = await getAuthenticatedContext();
 
   if (userError || !user) {
     return NextResponse.json({ detail: "Nicht angemeldet." }, { status: 401 });

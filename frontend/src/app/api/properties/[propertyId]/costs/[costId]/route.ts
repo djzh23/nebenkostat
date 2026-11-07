@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedContext } from "@/lib/supabase/server";
 import { checkFinalizedStatement } from "@/lib/supabase/statement-lock";
 import { overlapsCalendarYear } from "@/lib/domain/dates";
 
@@ -9,8 +9,7 @@ const distributionKeys = new Set(["flaeche", "personen", "einheiten", "direkt"])
 export async function PATCH(request: Request, context: RouteContext) {
   const { propertyId, costId } = await context.params;
   if (!/^[0-9a-f-]{36}$/i.test(propertyId) || !/^[0-9a-f-]{36}$/i.test(costId)) return NextResponse.json({ detail: "Ungültige ID." }, { status: 400 });
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const { supabase, user, error: userError } = await getAuthenticatedContext();
   if (userError || !user) return NextResponse.json({ detail: "Nicht angemeldet." }, { status: 401 });
   const { data: existing } = await supabase.from("cost_items").select("id, billing_year").eq("id", costId).eq("property_id", propertyId).maybeSingle();
   if (!existing) return NextResponse.json({ detail: "Kostenposition nicht gefunden." }, { status: 404 });
@@ -51,11 +50,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ detail: "Ungültige ID." }, { status: 400 });
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const { supabase, user, error: userError } = await getAuthenticatedContext();
 
   if (userError || !user) {
     return NextResponse.json({ detail: "Nicht angemeldet." }, { status: 401 });

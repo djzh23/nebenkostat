@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isValidIsoDate } from "@/lib/domain/dates";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedContext } from "@/lib/supabase/server";
 import { checkFinalizedStatement } from "@/lib/supabase/statement-lock";
 
 type RouteContext = { params: Promise<{ propertyId: string }> };
@@ -17,11 +17,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ detail: "Ungültige Objekt-ID." }, { status: 400 });
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const { supabase, user, error: userError } = await getAuthenticatedContext();
   if (userError || !user) {
     return NextResponse.json({ detail: "Nicht angemeldet." }, { status: 401 });
   }
@@ -57,11 +53,7 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ detail: "Ungültige Objekt-ID." }, { status: 400 });
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const { supabase, user, error: userError } = await getAuthenticatedContext();
 
   if (userError || !user) {
     return NextResponse.json({ detail: "Nicht angemeldet." }, { status: 401 });

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedContext } from "@/lib/supabase/server";
 
 type RouteContext = { params: Promise<{ propertyId: string; year: string }> };
 
@@ -31,11 +31,7 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ detail: "Bitte ein anderes gültiges Vorjahr auswählen." }, { status: 400 });
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const { supabase, user, error: userError } = await getAuthenticatedContext();
   if (userError || !user) {
     return NextResponse.json({ detail: "Nicht angemeldet." }, { status: 401 });
   }
