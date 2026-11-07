@@ -65,7 +65,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     }
     const hashedToken = link.data.properties.hashed_token;
     actionLink = hashedToken
-      ? `${baseURL}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=magiclink`
+      ? `${baseURL}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=email`
       : link.data.properties.action_link;
   }
 
@@ -90,7 +90,8 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     await page.getByRole("heading", { name: "Übersicht", exact: true }).waitFor({ timeout: 15_000 });
     const sessionCheck = await page.request.get(new URL("/api/properties", baseURL).toString());
     if (sessionCheck.status() !== 200) {
-      throw new Error(`Die erzeugte E2E-Session wird von /api/properties abgelehnt (HTTP ${sessionCheck.status()}).`);
+      const cookieNames = (await context.cookies(baseURL)).map((cookie) => cookie.name).join(", ") || "keine";
+      throw new Error(`Die erzeugte E2E-Session wird von /api/properties abgelehnt (HTTP ${sessionCheck.status()}). Vorhandene Cookie-Namen: ${cookieNames}.`);
     }
     await context.storageState({ path: statePath });
   } catch (error) {
