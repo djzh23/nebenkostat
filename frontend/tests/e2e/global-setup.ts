@@ -36,7 +36,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   let actionLink = magicLink;
 
   const supabaseUrl = process.env.E2E_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.E2E_SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey = process.env.E2E_SUPABASE_SECRET_KEY ?? process.env.E2E_SUPABASE_SERVICE_ROLE_KEY;
   if (!actionLink && supabaseUrl && serviceRoleKey && process.env.E2E_EMAIL) {
     const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
     const freshUser = process.env.E2E_CREATE_FRESH_USER === "1";

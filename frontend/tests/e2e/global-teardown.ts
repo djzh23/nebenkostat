@@ -13,7 +13,7 @@ export default async function globalTeardown(): Promise<void> {
   try {
     const metadata = JSON.parse(await fs.readFile(metadataPath, "utf8")) as { userId?: unknown; createdBySetup?: unknown };
     const supabaseUrl = process.env.E2E_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.E2E_SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey = process.env.E2E_SUPABASE_SECRET_KEY ?? process.env.E2E_SUPABASE_SERVICE_ROLE_KEY;
     if (metadata.createdBySetup === true && typeof metadata.userId === "string" && supabaseUrl && serviceRoleKey) {
       const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
       await admin.auth.admin.deleteUser(metadata.userId);
